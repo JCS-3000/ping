@@ -1,0 +1,15 @@
+{
+  "item.egm.mind_stone": "Mind Stone",
+  "item.egm.space_stone": "Space Stone",
+  "item.egm.power_stone": "Power Stone",
+  "item.egm.time_stone": "Time Stone",
+  "item.egm.soul_stone": "Soul Stone",
+  "item.egm.reality_stone": "Reality Stone",
+  "item.egm.infinity_gauntlet": "Infinity Gauntlet",
+  "item.egm.ingot_uru": "Uru Ingot",
+  "death.attack.infinity_stone": "%1$s decided to emulate Tony Stark",
+
+
+"itemGroup.egm.egm_tab": "End Game Mod"
+
+}
