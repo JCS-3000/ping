@@ -1,7 +1,7 @@
 package org.jcs.egm.gauntlet;
 
-import com.google.common.collect.Multimap;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -12,7 +12,9 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.*;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.NetworkHooks;
@@ -94,8 +96,7 @@ public class InfinityGauntletItem extends Item {
 
     @Override
     public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int count) {
-        // Only run on server!
-        if (!level.isClientSide && entity instanceof Player player) {
+        if (entity instanceof Player player) {
             ItemStackHandler handler = new ItemStackHandler(6);
             if (stack.hasTag() && stack.getTag().contains("Stones")) {
                 handler.deserializeNBT(stack.getTag().getCompound("Stones"));
@@ -107,13 +108,14 @@ public class InfinityGauntletItem extends Item {
 
             ItemStack stoneStack = handler.getStackInSlot(idx);
             if (!stoneStack.isEmpty() && stoneStack.getItem() instanceof StoneItem stoneItem) {
-                IGStoneAbility ability = StoneAbilities.REGISTRY.get(stoneItem.getKey());
+                IGStoneAbility ability = org.jcs.egm.stones.StoneAbilities.REGISTRY.get(stoneItem.getKey());
                 if (ability != null && stoneItem.canHoldUse()) {
                     ability.onUsingTick(level, player, stoneStack, count);
                 }
             }
         }
     }
+
 
     public static ItemStack getStoneStack(ItemStack gauntlet, int slot) {
         ItemStackHandler handler = new ItemStackHandler(6);

@@ -1,13 +1,13 @@
 package org.jcs.egm.registry;
 
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
-import org.jcs.egm.gauntlet.InfinityGauntletMenu;
 import org.jcs.egm.egm;
-import net.minecraft.world.item.ItemStack;
+import org.jcs.egm.gauntlet.InfinityGauntletMenu;
 
 public class ModMenuTypes {
     public static final DeferredRegister<MenuType<?>> MENUS =

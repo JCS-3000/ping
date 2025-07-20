@@ -1,6 +1,7 @@
 package org.jcs.egm.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
+
 import java.util.List;
 
 public class ModCommonConfig {

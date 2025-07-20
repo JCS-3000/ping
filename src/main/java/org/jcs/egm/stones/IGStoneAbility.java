@@ -2,27 +2,27 @@ package org.jcs.egm.stones;
 
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 
 public interface IGStoneAbility {
-    /**
-     * Called once when the ability is activated (on right-click).
-     */
-    void activate(Level level, Player player, ItemStack gauntletStack);
+    // Universal stone ability methods:
+    void activate(net.minecraft.world.level.Level level, Player player, ItemStack stack);
+
+    default void onUsingTick(net.minecraft.world.level.Level level, Player player, ItemStack stack, int count) {}
+
+    default void releaseUsing(net.minecraft.world.level.Level level, Player player, ItemStack stack, int timeLeft) {}
+
+    default boolean canHoldUse() { return true; }
 
     /**
-     * Whether this ability should continue activating while right-click is held.
-     * Default is false (one-off use).
-     */
-    default boolean canHoldUse() {
-        return false;
-    }
-
-    /**
-     * Called each tick while right-click is held, if canHoldUse() returns true.
-     * @param count number of ticks the item has been used for
-     */
-    default void onUsingTick(Level level, Player player, ItemStack gauntletStack, int count) {
-        // no-op by default
+     ** Returns true if the stone is being used inside the Infinity Gauntlet, else false.
+     **/
+    static boolean isInGauntlet(Player player, ItemStack stack) {
+        // Checks the player's main/offhand or the stack for being the gauntlet.
+        if (stack != null && stack.getItem().getClass().getSimpleName().equals("InfinityGauntletItem"))
+            return true;
+        ItemStack main = player.getMainHandItem();
+        ItemStack off = player.getOffhandItem();
+        return (main != null && main.getItem().getClass().getSimpleName().equals("InfinityGauntletItem"))
+                || (off != null && off.getItem().getClass().getSimpleName().equals("InfinityGauntletItem"));
     }
 }

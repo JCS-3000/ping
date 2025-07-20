@@ -1,16 +1,16 @@
 package org.jcs.egm.client.input;
 
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.entity.player.Player;
 import org.jcs.egm.client.render.GauntletOverlayRenderer;
 import org.jcs.egm.egm;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
-import org.jcs.egm.stones.StoneItem;
 import org.jcs.egm.network.NetworkHandler;
+import org.jcs.egm.stones.StoneItem;
 
 import java.util.ArrayList;
 import java.util.List;

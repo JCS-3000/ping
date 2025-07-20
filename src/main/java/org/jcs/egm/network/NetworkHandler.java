@@ -3,8 +3,8 @@ package org.jcs.egm.network;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
-import org.jcs.egm.egm;
 import org.jcs.egm.client.input.GauntletSelectedStonePacket;
+import org.jcs.egm.egm;
 
 public class NetworkHandler {
     public static final String PROTOCOL = "1.0";

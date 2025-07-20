@@ -5,14 +5,13 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.SlotItemHandler;
-import org.jcs.egm.registry.ModMenuTypes;
 import org.jcs.egm.registry.ModItems;
+import org.jcs.egm.registry.ModMenuTypes;
 
 public class InfinityGauntletMenu extends AbstractContainerMenu {
 

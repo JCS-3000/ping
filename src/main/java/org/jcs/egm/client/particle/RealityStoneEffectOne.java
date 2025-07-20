@@ -4,11 +4,11 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.*;
 import net.minecraft.core.particles.SimpleParticleType;
 
-public class RealityTrailParticle extends TextureSheetParticle {
+public class RealityStoneEffectOne extends TextureSheetParticle {
     private final SpriteSet spriteSet;
 
-    protected RealityTrailParticle(ClientLevel level, double x, double y, double z,
-                                   double xd, double yd, double zd, SpriteSet spriteSet) {
+    protected RealityStoneEffectOne(ClientLevel level, double x, double y, double z,
+                                    double xd, double yd, double zd, SpriteSet spriteSet) {
         super(level, x, y, z, xd, yd, zd);
         this.spriteSet = spriteSet;
 
@@ -44,7 +44,7 @@ public class RealityTrailParticle extends TextureSheetParticle {
         @Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z,
                                        double xSpeed, double ySpeed, double zSpeed) {
-            return new RealityTrailParticle(level, x, y, z, xSpeed, ySpeed, zSpeed, spriteSet);
+            return new RealityStoneEffectOne(level, x, y, z, xSpeed, ySpeed, zSpeed, spriteSet);
         }
     }
 }

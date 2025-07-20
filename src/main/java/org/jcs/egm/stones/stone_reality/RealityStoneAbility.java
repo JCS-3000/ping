@@ -1,192 +1,182 @@
 package org.jcs.egm.stones.stone_reality;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.ForgeRegistries;
-import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.registry.ModItems;
 import org.jcs.egm.registry.ModParticles;
-import java.util.List;
-import java.util.stream.Collectors;
+import org.jcs.egm.stones.IGStoneAbility;
 import org.jcs.egm.stones.StoneUseDamage;
 
-
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class RealityStoneAbility implements IGStoneAbility {
-    private static final int COOLDOWN_SECONDS = 3; //  How long the cooldown is, in seconds
-    private static final int COOLDOWN_TICKS = 20 * COOLDOWN_SECONDS;
-    private static final double MAX_DISTANCE = 50.0D; // Distance
-    private static final double PARTICLES_PER_BLOCK = 10.0D; // Particles Per Block
-
+    private static final int COOLDOWN_TICKS_HAND = 120; // 6 seconds
+    private static final int COOLDOWN_TICKS_GAUNTLET = 40; // 2 seconds
+    private static final double MAX_RANGE = 50.0D;
 
     @Override
-    public void activate(Level level, Player player, ItemStack gauntletStack) {
-        System.out.println("[RealityStoneAbility] activate() called!"); // DEBUG
+    public void activate(Level level, Player player, ItemStack stack) {
         if (level.isClientSide) return;
 
-        // --- Stone Self-Damage Logic (applies only if not in gauntlet) ---
-        boolean hasGauntlet = false;
-        ItemStack main = player.getMainHandItem();
-        ItemStack off = player.getOffhandItem();
-        if (main.getItem() instanceof org.jcs.egm.gauntlet.InfinityGauntletItem ||
-                off.getItem() instanceof org.jcs.egm.gauntlet.InfinityGauntletItem) {
-            hasGauntlet = true;
-        }
-        if (!hasGauntlet) {
-            player.hurt(StoneUseDamage.get(level, player), 6.0F);
+        boolean inGauntlet = IGStoneAbility.isInGauntlet(player, stack);
+
+        int cooldown = inGauntlet ? COOLDOWN_TICKS_GAUNTLET : COOLDOWN_TICKS_HAND;
+        ItemStack cooldownStack = (inGauntlet && stack != null && stack.getItem().getClass().getSimpleName().equals("InfinityGauntletItem"))
+                ? stack
+                : player.getMainHandItem();
+
+        // Silent cooldown check
+        if (player.getCooldowns().isOnCooldown(cooldownStack.getItem())) {
+            return;
         }
 
-        // 1) Cooldown
-        if (player instanceof ServerPlayer serverPlayer) {
-            if (main.getItem() instanceof org.jcs.egm.gauntlet.InfinityGauntletItem) {
-                serverPlayer.getCooldowns().addCooldown(main.getItem(), COOLDOWN_TICKS);
-            } else if (off.getItem() instanceof org.jcs.egm.gauntlet.InfinityGauntletItem) {
-                serverPlayer.getCooldowns().addCooldown(off.getItem(), COOLDOWN_TICKS);
-            } else {
-                // Fallback: if used directly, set cooldown on the stone
-                serverPlayer.getCooldowns().addCooldown(ModItems.REALITY_STONE.get(), COOLDOWN_TICKS);
+        player.getCooldowns().addCooldown(cooldownStack.getItem(), cooldown);
+
+        if (!inGauntlet) {
+            player.hurt(StoneUseDamage.get(level, player), 4.0F);
+        }
+
+        // Play activation sound
+        level.playSound(null, player.blockPosition(), SoundEvents.NOTE_BLOCK_BELL.get(), SoundSource.PLAYERS, 0.6F, 1.6F);
+
+        // Raytrace setup
+        Vec3 eye = player.getEyePosition(1.0F);
+        Vec3 look = player.getLookAngle();
+        Vec3 start = eye.add(look.scale(1.2));
+        Vec3 end = start.add(look.scale(MAX_RANGE));
+
+        EntityHitResult entityResult = getEntityHitResult(level, player, start, end);
+        BlockHitResult blockResult = level.clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
+
+        double entityDist = entityResult != null ? entityResult.getLocation().distanceTo(start) : Double.POSITIVE_INFINITY;
+        double blockDist = blockResult != null ? blockResult.getLocation().distanceTo(start) : Double.POSITIVE_INFINITY;
+
+        // Particle
+        spawnBeamParticles((ServerLevel) level, start, (entityDist < blockDist ? entityResult.getLocation() : blockResult.getLocation()));
+
+        boolean transformed = false;
+
+        // Priority: Mob > Block
+        if (entityResult != null && entityDist <= MAX_RANGE && entityDist < blockDist) {
+            Entity hitEntity = entityResult.getEntity();
+            if (hitEntity instanceof LivingEntity living && !(hitEntity instanceof Player)) {
+                transformed = tryReplaceMob((ServerLevel) level, living, player);
+            }
+        } else if (blockResult != null && blockDist <= MAX_RANGE) {
+            BlockPos blockPos = blockResult.getBlockPos();
+            BlockState oldState = level.getBlockState(blockPos);
+            if (!oldState.isAir() && tryReplaceBlock((ServerLevel) level, blockPos, oldState, player)) {
+                transformed = true;
             }
         }
 
-            // 2) Compute a “hand” start point
-            Vec3 eyePos = player.getEyePosition(1.0F);
-            Vec3 look = player.getLookAngle();
-            Vec3 right = look.cross(new Vec3(0, 1, 0)).normalize();
+        // Play a transformation sound at the hit point if something changed
+        if (transformed) {
+            Vec3 soundPos = (entityDist < blockDist && entityResult != null) ? entityResult.getLocation() : blockResult.getLocation();
+            level.playSound(null, soundPos.x, soundPos.y, soundPos.z, SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.85F, 1.0F);
+        }
+    }
 
-            double forwardOffset = 0.3;
-            double rightOffset = 0.3;
-            double downOffset = 0.3;
+    @Override
+    public boolean canHoldUse() { return false; }
 
-            Vec3 start = eyePos
-                    .add(look.scale(forwardOffset))
-                    .add(right.scale(rightOffset))
-                    .subtract(0, downOffset, 0);
+    // (Helpers unchanged...)
 
-            Vec3 end = start.add(look.scale(MAX_DISTANCE));
-
-            // 3) Raytrace block
-            HitResult blockTrace = level.clip(new ClipContext(
-                    start, end,
-                    ClipContext.Block.OUTLINE,
-                    ClipContext.Fluid.NONE,
-                    player
-            ));
-
-            // 4) Raytrace mob (living entity)
-            EntityHitResult mobTrace = ProjectileUtil.getEntityHitResult(
-                    level,
-                    player,
-                    start, end,
-                    player.getBoundingBox().expandTowards(look.scale(MAX_DISTANCE)),
-                    e -> e instanceof net.minecraft.world.entity.LivingEntity
-            );
-
-            // 5) Decide which was hit first (mob or block)
-            double distBlock = blockTrace.getType() == HitResult.Type.BLOCK
-                    ? blockTrace.getLocation().distanceTo(start)
-                    : Double.MAX_VALUE;
-            double distMob = mobTrace != null
-                    ? mobTrace.getLocation().distanceTo(start)
-                    : Double.MAX_VALUE;
-
-            boolean hitMob = distMob < distBlock;
-
-            Vec3 hitPos = hitMob
-                    ? mobTrace.getLocation()
-                    : blockTrace.getLocation();
-            double dist = start.distanceTo(hitPos);
-            int steps = (int) (dist * PARTICLES_PER_BLOCK);
-
-            // 6) Spawn server→client particles along the line
-            for (int i = 0; i <= steps; i++) {
-                double t = (double) i / steps;
-                double x = start.x + (hitPos.x - start.x) * t;
-                double y = start.y + (hitPos.y - start.y) * t;
-                double z = start.z + (hitPos.z - start.z) * t;
-                ((ServerLevel) level).sendParticles(
-                        ModParticles.REALITY_TRAIL.get(),
-                        x, y, z,
-                        1,    // count
-                        0.0D, 0.0D, 0.0D, 0.0D
-                );
+    private EntityHitResult getEntityHitResult(Level level, Player player, Vec3 start, Vec3 end) {
+        AABB box = new AABB(start, end).inflate(1.0D);
+        List<Entity> entities = level.getEntities(player, box, e -> e instanceof LivingEntity && !(e instanceof Player));
+        EntityHitResult best = null;
+        double bestDist = Double.POSITIVE_INFINITY;
+        for (Entity entity : entities) {
+            AABB entityBB = entity.getBoundingBox().inflate(0.25D);
+            Optional<Vec3> intercept = entityBB.clip(start, end);
+            if (intercept.isPresent()) {
+                double dist = start.distanceTo(intercept.get());
+                if (dist < bestDist && dist <= MAX_RANGE) {
+                    bestDist = dist;
+                    best = new EntityHitResult(entity, intercept.get());
+                }
             }
+        }
+        return best;
+    }
 
-            // 7) Do the replacement
-            if (hitMob && mobTrace != null && mobTrace.getEntity() instanceof net.minecraft.world.entity.LivingEntity living) {
-                // Replace mob with a random (non-blacklisted) mob
-                RegistryAccess regs = level.registryAccess();
-                List<?> allMobs = regs.registryOrThrow(Registries.ENTITY_TYPE)
-                        .stream()
-                        .filter(et -> {
-                            var cat = et.getCategory();
-                            if (cat == null) return false;
-                            if (cat == net.minecraft.world.entity.MobCategory.MISC) return false;
-                            // add other exclusions as you wish
-                            ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(et);
-                            return !RealityStoneBlacklistHelper.isHardcodedEntityBlacklisted(id)
-                                    && !RealityStoneBlacklistHelper.isConfigEntityBlacklisted(id);
-                        })
-
-                        .collect(Collectors.toList());
-                if (!allMobs.isEmpty()) {
-                    RandomSource rand = level.getRandom();
-                    var chosenType = allMobs.get(rand.nextInt(allMobs.size()));
-                    if (chosenType instanceof net.minecraft.world.entity.EntityType<?> et) {
-                        var entity = et.create(level);
-                        if (entity != null) {
-                            entity.moveTo(living.getX(), living.getY(), living.getZ(), living.getYRot(), living.getXRot());
-                            level.addFreshEntity(entity);
-                            ((ServerLevel) level).sendParticles(
-                                    ModParticles.REALITY_TRAIL.get(),
-                                    living.getX(),
-                                    living.getY() + living.getBbHeight() / 2.0,
-                                    living.getZ(),
-                                    100,    // Number of particles
-                                    0.4, 0.4, 0.4,   // Spread
-                                    0.01   // Particle speed
-                            );
-                            living.discard();
-                        }
-                    }
-                }
-            } else if (blockTrace.getType() == HitResult.Type.BLOCK) {
-                BlockHitResult bhr = (BlockHitResult) blockTrace;
-                BlockPos pos = bhr.getBlockPos();
-                RegistryAccess regs = level.registryAccess();
-                List<?> allBlocks = regs.registryOrThrow(Registries.BLOCK)
-                        .stream()
-                        .filter(b -> !RealityStoneBlacklistHelper.isHardcodedBlacklisted(ForgeRegistries.BLOCKS.getKey(b)))
-                        .filter(b -> !RealityStoneBlacklistHelper.isConfigBlacklisted(ForgeRegistries.BLOCKS.getKey(b)))
-                        .collect(Collectors.toList());
-                if (!allBlocks.isEmpty()) {
-                    RandomSource rand = level.getRandom();
-                    var chosen = allBlocks.get(rand.nextInt(allBlocks.size()));
-                    level.setBlockAndUpdate(pos, ((net.minecraft.world.level.block.Block) chosen).defaultBlockState());
-                    ((ServerLevel) level).sendParticles(
-                            ModParticles.REALITY_TRAIL.get(),
-                            pos.getX() + 0.5,
-                            pos.getY() + 0.5,
-                            pos.getZ() + 0.5,
-                            100,    // Number of particles
-                            0.4, 0.4, 0.4,   // Spread
-                            0.01   // Particle speed
-                    );
-                }
+    private void spawnBeamParticles(ServerLevel level, Vec3 from, Vec3 to) {
+        double dist = from.distanceTo(to);
+        Vec3 dir = to.subtract(from).normalize();
+        RandomSource rand = level.getRandom();
+        int particlesPerStep = 8;
+        for (double i = 0; i < dist; i += 0.25D) {
+            Vec3 pos = from.add(dir.scale(i));
+            level.sendParticles(ModParticles.REALITY_STONE_EFFECT_ONE.get(), pos.x, pos.y, pos.z, 1, 0, 0, 0, 0);
+            for (int j = 0; j < particlesPerStep; j++) {
+                double angle = rand.nextDouble() * Math.PI * 2;
+                double radius = 0.15 + rand.nextDouble() * 0.15;
+                Vec3 up = Math.abs(dir.y) < 0.9 ? new Vec3(0, 1, 0) : new Vec3(1, 0, 0);
+                Vec3 right = dir.cross(up).normalize();
+                Vec3 up2 = dir.cross(right).normalize();
+                Vec3 offset = right.scale(Math.cos(angle) * radius).add(up2.scale(Math.sin(angle) * radius));
+                Vec3 particlePos = pos.add(offset);
+                level.sendParticles(ModParticles.REALITY_STONE_EFFECT_ONE.get(), particlePos.x, particlePos.y, particlePos.z, 1, 0, 0, 0, 0);
             }
         }
     }
 
+    private boolean tryReplaceMob(ServerLevel level, LivingEntity target, Player player) {
+        List<EntityType<?>> available = ForgeRegistries.ENTITY_TYPES.getValues().stream()
+                .filter(type -> type != target.getType())
+                .filter(type -> Mob.class.isAssignableFrom(type.getBaseClass()))
+                .collect(Collectors.toList());
+        if (available.isEmpty()) return false;
+        RandomSource rand = level.getRandom();
+        EntityType<?> pick = available.get(rand.nextInt(available.size()));
+        Mob mob = (Mob) pick.create(level);
+        if (mob == null) return false;
+        mob.moveTo(target.getX(), target.getY(), target.getZ(), target.getYRot(), target.getXRot());
+        target.discard();
+        level.addFreshEntity(mob);
+        spawnBurstParticles(level, mob.position());
+        return true;
+    }
+
+    private boolean tryReplaceBlock(ServerLevel level, BlockPos pos, BlockState oldState, Player player) {
+        ResourceLocation oldId = ForgeRegistries.BLOCKS.getKey(oldState.getBlock());
+        if (oldId != null && oldId.toString().equals("minecraft:bedrock")) {
+            return false;
+        }
+        List<Block> available = ForgeRegistries.BLOCKS.getValues().stream()
+                .filter(block -> block != oldState.getBlock())
+                .filter(block -> block.defaultBlockState().isCollisionShapeFullBlock(level, pos))
+                .collect(Collectors.toList());
+        if (available.isEmpty()) return false;
+        RandomSource rand = level.getRandom();
+        Block newBlock = available.get(rand.nextInt(available.size()));
+        level.setBlockAndUpdate(pos, newBlock.defaultBlockState());
+        spawnBurstParticles(level, Vec3.atCenterOf(pos));
+        return true;
+    }
+
+    private void spawnBurstParticles(ServerLevel level, Vec3 pos) {
+        level.sendParticles(ModParticles.REALITY_STONE_EFFECT_ONE.get(), pos.x, pos.y, pos.z, 100, 0.25, 0.25, 0.25, 0.01);
+    }
+}

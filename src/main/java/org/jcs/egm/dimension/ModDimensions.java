@@ -9,7 +9,6 @@ import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
-import org.jcs.egm.dimension.SoulRealmChunkGenerator;
 
 /**
  * Handles registration of the Soul Realm dimension and its chunk generator.

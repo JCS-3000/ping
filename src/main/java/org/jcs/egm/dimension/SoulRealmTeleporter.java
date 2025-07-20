@@ -1,8 +1,7 @@
 package org.jcs.egm.dimension;
 
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 
 public class SoulRealmTeleporter {
     public static void teleport(ServerPlayer player) {

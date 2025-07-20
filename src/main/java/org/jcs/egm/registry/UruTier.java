@@ -2,7 +2,6 @@ package org.jcs.egm.registry;
 
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.crafting.Ingredient;
-import org.jcs.egm.registry.ModItems;
 
 public class UruTier {
     public static final Tier INSTANCE = new Tier() {

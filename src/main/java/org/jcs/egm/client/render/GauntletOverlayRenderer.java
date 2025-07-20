@@ -2,7 +2,7 @@ package org.jcs.egm.client.render;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -10,8 +10,6 @@ import net.minecraftforge.fml.common.Mod;
 import org.jcs.egm.egm;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
 import org.jcs.egm.stones.StoneItem;
-
-import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;

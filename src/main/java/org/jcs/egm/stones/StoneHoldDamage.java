@@ -8,8 +8,6 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
-import org.jcs.egm.registry.ModItems;
-import org.jcs.egm.stones.StoneUseDamage;
 
 @Mod.EventBusSubscriber(modid = "egm", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class StoneHoldDamage {
