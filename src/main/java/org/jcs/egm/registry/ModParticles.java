@@ -17,6 +17,9 @@ public class ModParticles {
     public static final RegistryObject<SimpleParticleType> POWER_STONE_EFFECT_ONE =
             PARTICLES.register("power_stone_effect_one", () -> new SimpleParticleType(true));
 
+    public static final RegistryObject<SimpleParticleType> POWER_STONE_EFFECT_TWO =
+            PARTICLES.register("power_stone_effect_one", () -> new SimpleParticleType(true));
+
     public static final RegistryObject<SimpleParticleType> TIME_STONE_EFFECT_ONE =
             PARTICLES.register("time_stone_effect_one", () -> new SimpleParticleType(true));
 }
