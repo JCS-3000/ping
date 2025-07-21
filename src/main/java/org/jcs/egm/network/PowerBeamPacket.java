@@ -7,7 +7,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
-import org.jcs.egm.client.PowerBeam;
+import org.jcs.egm.client.particle.PowerBeam;
 
 import java.util.function.Supplier;
 
@@ -36,8 +36,10 @@ public class PowerBeamPacket {
     }
 
     public static void handle(final PowerBeamPacket msg, Supplier<NetworkEvent.Context> ctx) {
+        System.out.println("[DEBUG] PowerBeamPacket.handle running on thread: " + Thread.currentThread().getName());
         ctx.get().enqueueWork(() -> {
             DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+                System.out.println("[DEBUG] PowerBeamPacket.handle (CLIENT) about to call spawn, from=" + msg.from + " to=" + msg.to);
                 Level level = Minecraft.getInstance().level;
                 if (level != null) {
                     PowerBeam.spawn(level, msg.from, msg.to);

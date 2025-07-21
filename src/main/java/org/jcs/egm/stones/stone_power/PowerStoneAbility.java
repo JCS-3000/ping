@@ -6,7 +6,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -16,6 +15,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import org.jcs.egm.entity.PowerStoneLightningEntity;
+import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
 import org.jcs.egm.stones.StoneUseDamage;
@@ -55,7 +56,7 @@ public class PowerStoneAbility implements IGStoneAbility {
         int ticksHeld = useDuration - count;
         boolean inGauntlet = isInGauntlet(player);
 
-        // Charging
+        // === CHARGE-UP PARTICLES ===
         if (ticksHeld < CHARGE_TICKS) {
             if (level.isClientSide && ticksHeld % 4 == 0) {
                 spawnChargeParticles(level, player);
@@ -66,7 +67,7 @@ public class PowerStoneAbility implements IGStoneAbility {
             return;
         }
 
-        // Hurt player if not in gauntlet
+        // === HAND USE LIMIT (if not in gauntlet) ===
         if (!inGauntlet) {
             player.hurt(StoneUseDamage.get(level, player), 2.0F);
             int ticks = handUseTicks.getOrDefault(player.getUUID(), 0) + 1;
@@ -79,27 +80,37 @@ public class PowerStoneAbility implements IGStoneAbility {
             handUseTicks.remove(player.getUUID());
         }
 
-        // Beam logic -- start from same spot as Reality Stone
-        Vec3 start = player.getEyePosition(1.0F).add(player.getLookAngle().scale(1.2));
+        // === BEAM LOGIC AND BLOCK MINING ===
+        Vec3 beamStart = player.getEyePosition(1.0F);
         Vec3 look = player.getLookAngle();
         double range = 30.0D;
-        Vec3 beamEnd = start.add(look.scale(range));
+        double step = 0.5D;
 
-        // Use POWER_STONE_EFFECT_ONE particles for the beam
-        spawnBeamParticles(level, start, beamEnd);
+        Vec3 beamVisualEnd = beamStart; // Default if nothing is hit
+        BlockPos thisHitBlock = null;
+        boolean hitBlock = false;
+        Vec3 hitPos = null;
 
         if (!level.isClientSide) {
-            double step = 0.5D;
-            boolean hitBlock = false;
-            BlockPos thisHitBlock = null;
-
             for (double d = 0; d <= range; d += step) {
-                Vec3 pos = start.add(look.scale(d));
+                Vec3 pos = beamStart.add(look.scale(d));
+                beamVisualEnd = pos; // Always update
+
                 BlockPos blockPos = BlockPos.containing(pos);
                 BlockState blockState = level.getBlockState(blockPos);
 
+                // === BLOCK HIT ===
                 if (!blockState.isAir()) {
                     thisHitBlock = blockPos;
+                    hitBlock = true;
+                    hitPos = Vec3.atCenterOf(blockPos);
+
+                    // --- Spawn impact effect (everyone sees it) ---
+                    if (level instanceof ServerLevel serverLevel) {
+                        serverLevel.sendParticles(ModParticles.POWER_STONE_EFFECT_TWO.get(),
+                                hitPos.x, hitPos.y, hitPos.z,
+                                6, 0.1, 0.1, 0.1, 0.02);
+                    }
 
                     // === BEDROCK HANDLING ===
                     if (blockState.getBlock() == Blocks.BEDROCK) {
@@ -107,13 +118,12 @@ public class PowerStoneAbility implements IGStoneAbility {
                         int prev = bedrockHitTicks.getOrDefault(playerId, 0);
                         bedrockHitTicks.put(playerId, prev + 1);
 
-                        // Play mining sound to everyone nearby every 4 ticks
                         if ((prev + 1) % 4 == 0 && level instanceof ServerLevel serverLevel) {
-                            double soundRange = 16.0; // vanilla block break sound range
+                            double soundRange = 16.0;
                             for (ServerPlayer sp : serverLevel.players()) {
                                 if (sp.position().distanceTo(Vec3.atCenterOf(blockPos)) <= soundRange) {
                                     level.playSound(
-                                            null, // everyone hears it
+                                            null,
                                             blockPos,
                                             SoundEvents.STONE_HIT,
                                             SoundSource.BLOCKS,
@@ -124,7 +134,6 @@ public class PowerStoneAbility implements IGStoneAbility {
                             }
                         }
 
-                        // === BREAKING PARTICLES EACH TICK ===
                         if (!level.isClientSide) {
                             level.levelEvent(2001, blockPos, Block.getId(blockState));
                         }
@@ -133,7 +142,7 @@ public class PowerStoneAbility implements IGStoneAbility {
                             level.destroyBlock(blockPos, true, player);
                             bedrockHitTicks.remove(playerId);
                         }
-                        // No cracks for bedrock (vanilla doesn't show them)
+                        // No cracks for bedrock
                     } else {
                         // === NORMAL BLOCK MINING ===
                         float resistance = blockState.getBlock().getExplosionResistance();
@@ -144,11 +153,9 @@ public class PowerStoneAbility implements IGStoneAbility {
 
                         int mined = miningTicks.getOrDefault(blockPos, 0) + 1;
 
-                        // Continue progress if still aiming at same block
                         if (blockPos.equals(lastBlockHit.getOrDefault(player.getUUID(), null))) {
                             miningTicks.put(blockPos, mined);
                         } else {
-                            // New block target: start progress, clear last block's cracks
                             BlockPos prevBlock = lastBlockHit.get(player.getUUID());
                             if (prevBlock != null)
                                 sendBlockBreakAnim(player, prevBlock, -1);
@@ -157,7 +164,6 @@ public class PowerStoneAbility implements IGStoneAbility {
                         }
                         lastBlockHit.put(player.getUUID(), blockPos);
 
-                        // Show breaking animation (cracks)
                         int progress = (int) ((float) mined / requiredTicks * 9.0f);
                         progress = Math.min(progress, 9);
                         sendBlockBreakAnim(player, blockPos, progress);
@@ -169,29 +175,46 @@ public class PowerStoneAbility implements IGStoneAbility {
                             sendBlockBreakAnim(player, blockPos, -1);
                         }
                     }
-                    hitBlock = true;
                     break;
                 }
 
-                // Damage entities in beam
+                // === ENTITY HIT ===
                 for (Entity entity : level.getEntities(player, player.getBoundingBox().move(look.scale(d)).inflate(0.5D))) {
                     if (entity instanceof LivingEntity && entity != player) {
                         entity.hurt(level.damageSources().playerAttack(player), 40.0F);
                         entity.push(look.x * 2, 0.2, look.z * 2);
+                        // --- Spawn impact effect at entity ---
+                        if (level instanceof ServerLevel serverLevel) {
+                            Vec3 entityPos = entity.position().add(0, entity.getBbHeight() / 2.0, 0);
+                            serverLevel.sendParticles(ModParticles.POWER_STONE_EFFECT_TWO.get(),
+                                    entityPos.x, entityPos.y, entityPos.z,
+                                    6, 0.1, 0.1, 0.1, 0.02);
+                        }
                     }
                 }
             }
-            // Reset bedrock timer if not hitting bedrock
+            // === RESET mining/breaking state if not hitting block ===
             if (!hitBlock || (hitBlock && thisHitBlock == null || level.getBlockState(thisHitBlock).getBlock() != Blocks.BEDROCK)) {
                 bedrockHitTicks.remove(player.getUUID());
             }
-            // Reset mining tick/cracks if no block hit this tick
             if (!hitBlock) {
                 BlockPos prev = lastBlockHit.remove(player.getUUID());
                 if (prev != null) {
                     miningTicks.remove(prev);
                     sendBlockBreakAnim(player, prev, -1);
                 }
+            }
+
+            // === SUMMON LIGHTNING ARC ENTITY ===
+            // Only spawn if there's a visible difference between start and end
+            if (!beamVisualEnd.equals(beamStart)) {
+                PowerStoneLightningEntity lightningArc = new PowerStoneLightningEntity(
+                        ModEntities.POWER_STONE_LIGHTNING.get(), // <-- Use your entity registry here!
+                        (ServerLevel)level,
+                        beamStart,
+                        beamVisualEnd
+                );
+                level.addFreshEntity(lightningArc);
             }
         }
     }
@@ -207,43 +230,13 @@ public class PowerStoneAbility implements IGStoneAbility {
         }
     }
 
-    // === SEND BREAK ANIM ===
     private void sendBlockBreakAnim(Player player, BlockPos pos, int progress) {
         if (player instanceof ServerPlayer sp)
             sp.connection.send(new ClientboundBlockDestructionPacket(sp.getId(), pos, progress));
     }
 
-    // === PARTICLE HELPERS ===
     private void spawnChargeParticles(Level level, Player player) {
         Vec3 pos = player.getEyePosition(1.0F).add(player.getLookAngle().scale(0.5));
         level.addParticle(ModParticles.POWER_STONE_EFFECT_ONE.get(), pos.x, pos.y, pos.z, 0, 0.01, 0);
-    }
-
-    // === BEAM WITH POWER_STONE_EFFECT_ONE PARTICLE ===
-    private void spawnBeamParticles(Level level, Vec3 from, Vec3 to) {
-        if (!(level instanceof ServerLevel sl)) return;
-        double dist = from.distanceTo(to);
-        Vec3 dir = to.subtract(from).normalize();
-        RandomSource rand = sl.getRandom();
-        int particlesPerStep = 3; // thin beam
-
-        for (double i = 0; i < dist; i += 0.33D) {
-            Vec3 pos = from.add(dir.scale(i));
-            sl.sendParticles(ModParticles.POWER_STONE_EFFECT_ONE.get(), pos.x, pos.y, pos.z, 1, 0, 0, 0, 0);
-
-            for (int j = 0; j < particlesPerStep; j++) {
-                double angle = rand.nextDouble() * Math.PI * 2;
-                double radius = 0.07 + rand.nextDouble() * 0.07;
-
-                Vec3 up = Math.abs(dir.y) < 0.9 ? new Vec3(0, 1, 0) : new Vec3(1, 0, 0);
-                Vec3 right = dir.cross(up).normalize();
-                Vec3 up2 = dir.cross(right).normalize();
-
-                Vec3 offset = right.scale(Math.cos(angle) * radius).add(up2.scale(Math.sin(angle) * radius));
-                Vec3 particlePos = pos.add(offset);
-
-                sl.sendParticles(ModParticles.POWER_STONE_EFFECT_ONE.get(), particlePos.x, particlePos.y, particlePos.z, 1, 0, 0, 0, 0);
-            }
-        }
     }
 }

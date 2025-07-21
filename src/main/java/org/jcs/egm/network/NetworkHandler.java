@@ -6,8 +6,6 @@ import net.minecraftforge.network.simple.SimpleChannel;
 import org.jcs.egm.client.input.GauntletSelectedStonePacket;
 import org.jcs.egm.egm;
 
-import static org.antlr.v4.runtime.atn.LexerActionType.CHANNEL;
-
 public class NetworkHandler {
     public static final String PROTOCOL = "1.0";
     public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
@@ -23,6 +21,13 @@ public class NetworkHandler {
                 GauntletSelectedStonePacket::encode,
                 GauntletSelectedStonePacket::decode,
                 (msg, ctx) -> { msg.handle(ctx); });
-        CHANNEL.registerMessage(id++, PowerBeamPacket.class, PowerBeamPacket::encode, PowerBeamPacket::decode, PowerBeamPacket::handle);
+        INSTANCE.registerMessage(
+
+                id++,
+                PowerBeamPacket.class,
+                PowerBeamPacket::encode,
+                PowerBeamPacket::decode,
+                PowerBeamPacket::handle
+        );
     }
 }

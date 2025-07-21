@@ -1,6 +1,7 @@
 package org.jcs.egm.client;
 
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
@@ -11,6 +12,8 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.jcs.egm.client.particle.PowerStoneEffectOne;
 import org.jcs.egm.client.particle.RealityStoneEffectOne;
 import org.jcs.egm.client.particle.TimeStoneEffectOne;
+import org.jcs.egm.client.render.PowerStoneLightningRenderer;
+import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.registry.ModItems;
 import org.jcs.egm.registry.ModMenuTypes;
 import org.jcs.egm.registry.ModParticles;
@@ -20,13 +23,15 @@ public class ClientSetup {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
+        EntityRenderers.register(
+                ModEntities.POWER_STONE_LIGHTNING.get(),
+                PowerStoneLightningRenderer::new);
 
-        // Register your gauntlet menu screen
         event.enqueueWork(() -> {
             MenuScreens.register(
                     ModMenuTypes.INFINITY_GAUNTLET.get(),
-                    InfinityGauntletScreen::new
-            );
+                    InfinityGauntletScreen::new);
+
 
             // Register custom item property for model overrides!
             ItemProperties.register(
