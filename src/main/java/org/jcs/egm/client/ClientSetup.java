@@ -25,12 +25,13 @@ public class ClientSetup {
     public static void onClientSetup(FMLClientSetupEvent event) {
         EntityRenderers.register(
                 ModEntities.POWER_STONE_LIGHTNING.get(),
-                PowerStoneLightningRenderer::new);
-
+                PowerStoneLightningRenderer::new
+        );
         event.enqueueWork(() -> {
             MenuScreens.register(
                     ModMenuTypes.INFINITY_GAUNTLET.get(),
-                    InfinityGauntletScreen::new);
+                    InfinityGauntletScreen::new
+            );
 
 
             // Register custom item property for model overrides!

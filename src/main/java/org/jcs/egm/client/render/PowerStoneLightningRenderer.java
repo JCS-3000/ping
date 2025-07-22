@@ -2,12 +2,12 @@ package org.jcs.egm.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.jcs.egm.entity.PowerStoneLightningEntity;
 
@@ -27,16 +27,16 @@ public class PowerStoneLightningRenderer extends EntityRenderer<PowerStoneLightn
         Vec3 end = entity.getEnd();
         if (start == null || end == null) return;
 
-        // For fadeout: alpha goes from 1 -> 0 as entity dies
-        float alpha = Mth.clamp(entity.tickCount / 10.0f, 0f, 1f);
+        float alpha = 1f - (entity.tickCount / 10.0f); // Fades as entity ages
 
         renderLightning(start, end, poseStack, buffer, packedLight, alpha);
     }
 
     private void renderLightning(Vec3 start, Vec3 end, PoseStack poseStack, MultiBufferSource buffer,
                                  int packedLight, float alpha) {
-        final int segments = 12; // how many zig-zags
+        final int segments = 12;
         final float thickness = 0.15f;
+        final int steps = 6; // steps between each segment for smoothness
 
         Random rand = new Random();
         Vec3[] points = new Vec3[segments + 1];
@@ -45,7 +45,6 @@ public class PowerStoneLightningRenderer extends EntityRenderer<PowerStoneLightn
             double t = i / (double) segments;
             Vec3 pos = start.lerp(end, t);
 
-            // Add some zig-zag (perpendicular to the main direction)
             if (i != 0 && i != segments) {
                 Vec3 dir = end.subtract(start).normalize();
                 Vec3 up = Math.abs(dir.y) < 0.9 ? new Vec3(0, 1, 0) : new Vec3(1, 0, 0);
@@ -61,13 +60,25 @@ public class PowerStoneLightningRenderer extends EntityRenderer<PowerStoneLightn
             points[i] = pos;
         }
 
+        // DEBUG: Spawn flame along the arc, so you can see the entire bolt
+        for (int i = 0; i < segments; i++) {
+            Vec3 a = points[i];
+            Vec3 b = points[i + 1];
+            for (int s = 0; s <= steps; s++) {
+                double t = s / (double) steps;
+                Vec3 pos = a.lerp(b, t);
+                Minecraft.getInstance().level.addParticle(
+                        net.minecraft.core.particles.ParticleTypes.FLAME, pos.x, pos.y, pos.z, 0, 0, 0
+                );
+            }
+        }
+
+        // Render the lightning arc with the texture and color (tweak for more visibility if you like)
         VertexConsumer consumer = buffer.getBuffer(RenderType.lightning());
         for (int i = 0; i < segments; i++) {
             Vec3 a = points[i];
             Vec3 b = points[i + 1];
-            float r = 0.45f, g = 0.7f, bl = 1f; // Lightning color
-
-            // Simple quad for each segment (can be improved)
+            float r = 0.45f, g = 0.7f, bl = 1f;
             consumer.vertex(a.x, a.y, a.z).color(r, g, bl, alpha).endVertex();
             consumer.vertex(b.x, b.y, b.z).color(r, g, bl, alpha).endVertex();
         }

@@ -21,13 +21,5 @@ public class NetworkHandler {
                 GauntletSelectedStonePacket::encode,
                 GauntletSelectedStonePacket::decode,
                 (msg, ctx) -> { msg.handle(ctx); });
-        INSTANCE.registerMessage(
-
-                id++,
-                PowerBeamPacket.class,
-                PowerBeamPacket::encode,
-                PowerBeamPacket::decode,
-                PowerBeamPacket::handle
-        );
     }
 }

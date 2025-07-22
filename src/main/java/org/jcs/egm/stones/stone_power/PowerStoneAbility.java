@@ -81,7 +81,14 @@ public class PowerStoneAbility implements IGStoneAbility {
         }
 
         // === BEAM LOGIC AND BLOCK MINING ===
-        Vec3 beamStart = player.getEyePosition(1.0F);
+        Vec3 right = player.getLookAngle().cross(new Vec3(0, 1, 0)).normalize().scale(0.38);
+        Vec3 forward = player.getLookAngle().scale(0.65);
+        Vec3 beamStart = player.getEyePosition(1.0F)
+                .add(right)
+                .add(forward)
+                .add(0, -0.45, 0);
+
+
         Vec3 look = player.getLookAngle();
         double range = 30.0D;
         double step = 0.5D;
@@ -206,14 +213,13 @@ public class PowerStoneAbility implements IGStoneAbility {
             }
 
             // === SUMMON LIGHTNING ARC ENTITY ===
-            // Only spawn if there's a visible difference between start and end
+
             if (!beamVisualEnd.equals(beamStart)) {
                 PowerStoneLightningEntity lightningArc = new PowerStoneLightningEntity(
-                        ModEntities.POWER_STONE_LIGHTNING.get(), // <-- Use your entity registry here!
-                        (ServerLevel)level,
-                        beamStart,
-                        beamVisualEnd
+                        ModEntities.POWER_STONE_LIGHTNING.get(),
+                        (ServerLevel)level
                 );
+                lightningArc.setEndpoints(beamStart, beamVisualEnd);
                 level.addFreshEntity(lightningArc);
             }
         }
