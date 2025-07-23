@@ -65,7 +65,6 @@ public class StoneItem extends Item {
             ability.activate(level, player, stack);
         }
 
-
         return InteractionResultHolder.success(stack);
     }
 
@@ -78,6 +77,18 @@ public class StoneItem extends Item {
             }
         }
     }
+
+    // --- Add this override to trigger cleanup on use stop ---
+    @Override
+    public void releaseUsing(ItemStack stack, Level level, LivingEntity entity, int timeLeft) {
+        if (entity instanceof Player player && !level.isClientSide) {
+            IGStoneAbility ability = StoneAbilities.REGISTRY.get(key);
+            if (ability != null && ability.canHoldUse()) {
+                ability.releaseUsing(level, player, stack, timeLeft);
+            }
+        }
+    }
+
 
     public boolean canHoldUse() {
         IGStoneAbility ability = StoneAbilities.REGISTRY.get(key);

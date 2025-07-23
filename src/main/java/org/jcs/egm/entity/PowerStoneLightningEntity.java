@@ -21,17 +21,17 @@ public class PowerStoneLightningEntity extends Entity {
     public static final EntityDataAccessor<Float> END_Y = SynchedEntityData.defineId(PowerStoneLightningEntity.class, EntityDataSerializers.FLOAT);
     public static final EntityDataAccessor<Float> END_Z = SynchedEntityData.defineId(PowerStoneLightningEntity.class, EntityDataSerializers.FLOAT);
 
-    private int life; // ticks left (for fade out, etc.)
+    // Track last tick endpoints were set (for instant despawn)
+    private int lastUpdatedTick = 0;
 
-    // Only the default constructor should be used!
     public PowerStoneLightningEntity(EntityType<?> type, Level world) {
         super(type, world);
         this.noPhysics = true;
-        this.life = 200; // visible for 10 ticks (half a second)
     }
 
     // Call this immediately after construction and before addFreshEntity!
     public void setEndpoints(Vec3 start, Vec3 end) {
+        if (start == null || end == null) return;
         this.entityData.set(START_X, (float)start.x);
         this.entityData.set(START_Y, (float)start.y);
         this.entityData.set(START_Z, (float)start.z);
@@ -39,6 +39,7 @@ public class PowerStoneLightningEntity extends Entity {
         this.entityData.set(END_Y, (float)end.y);
         this.entityData.set(END_Z, (float)end.z);
         setPos(start.x, start.y, start.z);
+        lastUpdatedTick = this.tickCount; // Track updates for despawn
     }
 
     @Override
@@ -69,12 +70,6 @@ public class PowerStoneLightningEntity extends Entity {
         tag.putFloat("ez", this.entityData.get(END_Z));
     }
 
-    @Override
-    public void tick() {
-        super.tick();
-        if (--life <= 0) discard();
-    }
-
     public Vec3 getStart() {
         return new Vec3(
                 this.entityData.get(START_X),
@@ -88,6 +83,17 @@ public class PowerStoneLightningEntity extends Entity {
                 this.entityData.get(END_Y),
                 this.entityData.get(END_Z)
         );
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (!this.level().isClientSide) {
+            // Despawn if not updated for 2 ticks (i.e., use released)
+            if (this.tickCount - lastUpdatedTick > 2) {
+                this.discard();
+            }
+        }
     }
 
     @Override
