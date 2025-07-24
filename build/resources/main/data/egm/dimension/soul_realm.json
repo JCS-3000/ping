@@ -1,0 +1,10 @@
+{
+  "type": "egm:soul_realm",
+  "generator": {
+    "type": "egm:soul_realm_chunk_generator",
+    "biome_source": {
+      "type": "minecraft:fixed",
+      "biome": "egm:soul_realm"
+    }
+  }
+}

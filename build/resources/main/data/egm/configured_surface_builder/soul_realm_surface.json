@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:surface_builder_configured",
+  "config": {
+    "surface_builder": "minecraft:default",
+    "configuration": {
+      "top_material":        { "Name": "minecraft:red_sand" },
+      "under_material":      { "Name": "minecraft:red_sand" },
+      "underwater_material": { "Name": "minecraft:water" }
+    }
+  }
+}

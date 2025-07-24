@@ -9,6 +9,7 @@ import org.jcs.egm.egm;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
 import org.jcs.egm.stones.StoneItem;
 
+
 public class ModItems {
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, egm.MODID);

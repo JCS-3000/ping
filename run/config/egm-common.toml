@@ -1,0 +1,7 @@
+
+[RealityStone]
+	#Blocks the Reality Stone will never create. Format: modid:block_name
+	reality_stone_block_blacklist = ["minecraft:bedrock", "minecraft:command_block"]
+	#Entities the Reality Stone will never create. Format: modid:entity_name
+	reality_stone_entity_blacklist = ["minecraft:ender_dragon", "minecraft:wither"]
+

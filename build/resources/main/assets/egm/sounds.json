@@ -1,0 +1,18 @@
+{
+  "reality": {
+    "category": "players",
+    "sounds": [{ "name": "egm:reality", "stream": false }]
+  },
+  "dust": {
+    "category": "players",
+    "sounds": [{ "name": "egm:dust", "stream": false }]
+  },
+  "snap": {
+    "category": "players",
+    "sounds": [{ "name": "egm:snap", "stream": false }]
+  },
+  "gauntlet_assembled": {
+    "category": "players",
+    "sounds": [{ "name": "egm:gauntlet_assembled", "stream": false }]
+  }
+}

@@ -11,6 +11,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.jcs.egm.client.particle.PowerStoneEffectOne;
 import org.jcs.egm.client.particle.RealityStoneEffectOne;
+import org.jcs.egm.client.particle.SoulStoneEffectOne;
 import org.jcs.egm.client.particle.TimeStoneEffectOne;
 import org.jcs.egm.client.render.PowerStoneLightningRenderer;
 import org.jcs.egm.registry.ModEntities;
@@ -57,21 +58,25 @@ public class ClientSetup {
         // REALITY //
         event.registerSpriteSet(
                 ModParticles.REALITY_STONE_EFFECT_ONE.get(),
-                RealityStoneEffectOne.Provider::new
-        );
+                RealityStoneEffectOne.Provider::new);
+
         // SPACE //
         event.registerSpriteSet(
                 ModParticles.POWER_STONE_EFFECT_ONE.get(),
-                PowerStoneEffectOne.Provider::new
-        );
+                PowerStoneEffectOne.Provider::new);
+
         event.registerSpriteSet(
                 ModParticles.POWER_STONE_EFFECT_TWO.get(),
-                PowerStoneEffectOne.Provider::new
-        );
+                PowerStoneEffectOne.Provider::new);
+
         // TIME //
         event.registerSpriteSet(
                 ModParticles.TIME_STONE_EFFECT_ONE.get(),
-                TimeStoneEffectOne.Provider::new
-        );
+                TimeStoneEffectOne.Provider::new);
+
+        // SOUL //
+        event.registerSpriteSet(
+                ModParticles.SOUL_STONE_EFFECT_ONE.get(),
+                SoulStoneEffectOne.Provider::new);
     }
 }

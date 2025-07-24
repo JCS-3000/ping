@@ -266,6 +266,6 @@ public class PowerStoneAbility implements IGStoneAbility {
         Vec3 look = player.getLookAngle();
         Vec3 chest = player.position().add(0, 1.0, 0);
         Vec3 pos = chest.add(look.scale(0.5));
-        level.addParticle(ModParticles.POWER_STONE_EFFECT_ONE.get(), pos.x, pos.y, pos.z, 0, 0.01, 0);
+        level.addParticle(ModParticles.POWER_STONE_EFFECT_TWO.get(), pos.x, pos.y, pos.z, 0, 0.01, 0);
     }
 }

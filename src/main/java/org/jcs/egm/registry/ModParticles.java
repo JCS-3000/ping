@@ -22,4 +22,7 @@ public class ModParticles {
 
     public static final RegistryObject<SimpleParticleType> TIME_STONE_EFFECT_ONE =
             PARTICLES.register("time_stone_effect_one", () -> new SimpleParticleType(true));
+
+    public static final RegistryObject<SimpleParticleType> SOUL_STONE_EFFECT_ONE =
+            PARTICLES.register("soul_stone_effect_one", () -> new SimpleParticleType(true));
 }
