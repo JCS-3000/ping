@@ -3,6 +3,7 @@ package org.jcs.egm.stones.stone_soul;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -81,7 +82,10 @@ public class SoulStoneAbility implements IGStoneAbility {
             if (egg.isEmpty()) {
                 if (!warned) {
                     player.displayClientMessage(
-                            Component.literal("A soul-less creature is nearby"), true);
+                            Component.literal("A soul-less creature is nearby")
+                                    .withStyle(Style.EMPTY
+                                    .withItalic(true)
+                                    .withColor(0xD5700E)), true);
                     warned = true;
                 }
                 continue;
@@ -133,7 +137,9 @@ public class SoulStoneAbility implements IGStoneAbility {
             if (mType == null) {
                 if (!warned) {
                     player.displayClientMessage(
-                            Component.literal("A soul-less creature is nearby"), true);
+                            Component.literal("A soul-less creature is nearby")                                    .withStyle(Style.EMPTY
+                                    .withItalic(true)
+                                    .withColor(0xD5700E)), true);
                     warned = true;
                 }
                 continue;

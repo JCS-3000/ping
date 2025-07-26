@@ -74,8 +74,7 @@ public class SoulStoneRescueHandler {
         player.clearFire();
 
         // Strong totem effects
-        player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 20 * 20, 2));  // 20 sec, lvl 3
-        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * 15, 2)); // 15 sec, lvl 3
+        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 20 * 15, 4)); // 15 sec, lvl 5
         player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 20 * 15, 1)); // 15 sec, lvl 2
         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 20 * 15, 1)); // 15 sec, lvl 2
 

@@ -5,3 +5,13 @@
 	#Entities the Reality Stone will never create. Format: modid:entity_name
 	reality_stone_entity_blacklist = ["minecraft:ender_dragon", "minecraft:wither"]
 
+[MindStone]
+	#Entities that cannot be possessed by the Mind Stone. Format: modid:entity_name
+	mind_stone_entity_blacklist = ["minecraft:ender_dragon", "minecraft:wither", "minecraft:warden"]
+	#Entities that gain flight controls when possessed. Format: modid:entity_name.
+	mind_stone_flight_entities = ["minecraft:bat", "minecraft:blaze", "minecraft:ghast", "minecraft:parrot", "minecraft:bee", "minecraft:phantom", "minecraft:vex", "minecraft:ender_dragon", "minecraft:allay"]
+	#Entities that gain wall-climb controls when possessed. Format: modid:entity_name.
+	mind_stone_wallclimb_entities = ["minecraft:spider", "minecraft:cave_spider", "minecraft:silverfish", "minecraft:endermite"]
+	#Entities that gain increased swim speed when possessed. Format: modid:entity_name.
+	mind_stone_swimspeed_entities = ["minecraft:squid", "minecraft:glow_squid", "minecraft:axolotl", "minecraft:dolphin", "minecraft:cod", "minecraft:salmon", "minecraft:pufferfish", "minecraft:tropical_fish", "minecraft:turtle"]
+
