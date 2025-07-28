@@ -1,19 +1,20 @@
 package org.jcs.egm.network;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.world.entity.Entity;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import org.jcs.egm.client.input.ClientPossessionTracker;
 import org.jcs.egm.stones.stone_mind.MindStoneOverlay;
 
 import java.util.function.Supplier;
 
 public class StartPossessionPacket {
     private final int durationTicks;
-    private final int entityId;  // network entity ID, not UUID
+    private final int entityId;  // entity ID of the possessed mob
 
     public StartPossessionPacket(int durationTicks, int entityId) {
         this.durationTicks = durationTicks;
@@ -42,15 +43,18 @@ public class StartPossessionPacket {
 
     @OnlyIn(Dist.CLIENT)
     private static void handleClient(int duration, int entityId) {
+        // --- KEY: Set tracker active ---
+        ClientPossessionTracker.setPossessing(true);
+
         Minecraft mc = Minecraft.getInstance();
         var level = mc.level;
         if (level == null) return;
 
-        // 1) start the overlay
+        // Start overlay
         MindStoneOverlay.start(duration);
 
-        // 2) switch camera locally to the mob
-        Entity e = level.getEntity(entityId);
+        // Switch camera locally to the mob
+        var e = level.getEntity(entityId);
         if (e != null) {
             mc.setCameraEntity(e);
         }

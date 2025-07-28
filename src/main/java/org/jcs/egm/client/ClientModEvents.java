@@ -7,9 +7,9 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.jcs.egm.client.input.ClientPossessionTracker;
 import org.jcs.egm.network.NetworkHandler;
 import org.jcs.egm.network.PossessionControlPacket;
-import org.jcs.egm.stones.stone_mind.MindStoneOverlay;
 
 import static net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.FORGE;
 
@@ -22,7 +22,8 @@ public class ClientModEvents {
 
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-        if (player == null || !MindStoneOverlay.isActive()) return;
+        // KEY CHANGE: Use tracker, not overlay!
+        if (player == null || !ClientPossessionTracker.isPossessing()) return;
 
         // Movement keys
         float strafe = 0f, forward = 0f;
@@ -32,6 +33,7 @@ public class ClientModEvents {
         if (mc.options.keyRight.isDown()) strafe  -= 1f;
         boolean jump   = mc.options.keyJump.isDown();
         boolean attack = mc.options.keyAttack.isDown();
+        System.out.println("[CLIENT] strafe=" + strafe + " forward=" + forward + " jump=" + jump + " attack=" + attack);
 
         // Mouse look
         float yaw   = player.getYRot();
@@ -51,7 +53,7 @@ public class ClientModEvents {
 
     @SubscribeEvent
     public static void onAttack(AttackEntityEvent event) {
-        if (MindStoneOverlay.isActive()) {
+        if (ClientPossessionTracker.isPossessing()) {
             event.setCanceled(true);
         }
     }

@@ -1,10 +1,12 @@
 package org.jcs.egm.network;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import org.jcs.egm.client.input.ClientPossessionTracker;
 import org.jcs.egm.stones.stone_mind.MindStoneOverlay;
 
 import java.util.function.Supplier;
@@ -19,7 +21,7 @@ public class EndPossessionPacket {
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctxSupp) {
-        var ctx = ctxSupp.get();
+        NetworkEvent.Context ctx = ctxSupp.get();
         if (ctx.getDirection() == NetworkDirection.PLAY_TO_CLIENT) {
             ctx.enqueueWork(EndPossessionPacket::handleClient);
         }
@@ -28,7 +30,10 @@ public class EndPossessionPacket {
 
     @OnlyIn(Dist.CLIENT)
     private static void handleClient() {
-        var mc = net.minecraft.client.Minecraft.getInstance();
+        // --- KEY: Set tracker inactive ---
+        ClientPossessionTracker.setPossessing(false);
+
+        Minecraft mc = Minecraft.getInstance();
         MindStoneOverlay.stop();
         // reset camera back to player
         if (mc.player != null) {

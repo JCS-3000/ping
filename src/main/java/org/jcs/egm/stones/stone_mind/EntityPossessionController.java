@@ -46,10 +46,13 @@ public class EntityPossessionController {
             speed = 0.3;
         }
 
-        // Always update velocity, even if zero, to keep mob responsive
+        // --- MOVEMENT FIX: forcibly move mob in input direction ---
+        // This is a very direct approach, should work for chickens and other mobs with AI off.
         Vec3 look = mob.getLookAngle();
-        double dx = look.x * moveVec.z + look.z * moveVec.x;
-        double dz = look.z * moveVec.z - look.x * moveVec.x;
+        double forward = moveVec.z * speed;
+        double strafe  = moveVec.x * speed;
+        double dx = -Math.sin(Math.toRadians(mob.getYRot())) * forward + Math.cos(Math.toRadians(mob.getYRot())) * strafe;
+        double dz = Math.cos(Math.toRadians(mob.getYRot())) * forward + Math.sin(Math.toRadians(mob.getYRot())) * strafe;
         double dy = mob.getDeltaMovement().y;
 
         if (canFly && !mob.onGround()) {
@@ -64,13 +67,19 @@ public class EntityPossessionController {
         mob.setDeltaMovement(dx, dy, dz);
         mob.hasImpulse = true;
 
+        // Call move() to force position update (fix for AI-off mobs like chicken)
+        mob.move(net.minecraft.world.entity.MoverType.SELF, mob.getDeltaMovement());
+
+        // Regular jump (if on ground, not flying/swimming)
         if (packet.jump && mob.onGround() && !canFly && !canSwim) {
             mob.setDeltaMovement(mob.getDeltaMovement().x, 0.42, mob.getDeltaMovement().z);
             mob.hasImpulse = true;
+            mob.move(net.minecraft.world.entity.MoverType.SELF, new Vec3(0, 0.42, 0));
         }
 
+        // --- ATTACK FIX: Exclude controller from possible targets ---
         if (packet.attack) {
-            Entity tgt = getNearestAttackableEntity(mob, 2.5);
+            Entity tgt = getNearestAttackableEntity(mob, 2.5, player.getUUID());
             if (tgt instanceof LivingEntity lt) {
                 mob.doHurtTarget(lt);
                 mob.swing(mob.getUsedItemHand());
@@ -78,6 +87,17 @@ public class EntityPossessionController {
         }
     }
 
+    // Now excludes the player who is possessing the mob
+    private static Entity getNearestAttackableEntity(LivingEntity mob, double range, UUID controllerUuid) {
+        return mob.level().getEntities(
+                mob,
+                mob.getBoundingBox().inflate(range),
+                e -> e instanceof LivingEntity le && le != mob && le.isAlive() && (le.getUUID() == null || !le.getUUID().equals(controllerUuid))
+        ).stream().findFirst().orElse(null);
+    }
+
+    // Overload for legacy usage (should not be used, but left for compatibility)
+    @Deprecated
     private static Entity getNearestAttackableEntity(LivingEntity mob, double range) {
         return mob.level().getEntities(
                 mob,
