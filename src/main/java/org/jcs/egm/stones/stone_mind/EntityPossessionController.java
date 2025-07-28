@@ -24,6 +24,11 @@ public class EntityPossessionController {
         LivingEntity mob = getEntity(player.level(), info.getEntityId());
         if (mob == null) return;
 
+        // Always set mob rotation to match player's head direction
+        mob.setYRot(packet.yaw);
+        mob.setXRot(packet.pitch);
+        mob.yHeadRot = packet.yaw;
+
         ResourceLocation key = mob.getType().builtInRegistryHolder().key().location();
         if (key == null) return;
 
@@ -41,25 +46,23 @@ public class EntityPossessionController {
             speed = 0.3;
         }
 
-        if (moveVec.lengthSqr() > 0) {
-            moveVec = moveVec.normalize().scale(speed);
-            Vec3 look = mob.getLookAngle();
-            double dx = look.x * moveVec.z + look.z * moveVec.x;
-            double dz = look.z * moveVec.z - look.x * moveVec.x;
-            double dy = mob.getDeltaMovement().y;
+        // Always update velocity, even if zero, to keep mob responsive
+        Vec3 look = mob.getLookAngle();
+        double dx = look.x * moveVec.z + look.z * moveVec.x;
+        double dz = look.z * moveVec.z - look.x * moveVec.x;
+        double dy = mob.getDeltaMovement().y;
 
-            if (canFly && !mob.onGround()) {
-                if (packet.jump)   dy = 0.42;
-                if (packet.attack) dy = -0.42;
-            }
-
-            if (canWallClimb && packet.jump && mob.horizontalCollision) {
-                dy = 0.25;
-            }
-
-            mob.setDeltaMovement(dx, dy, dz);
-            mob.hasImpulse = true;
+        if (canFly && !mob.onGround()) {
+            if (packet.jump)   dy = 0.42;
+            if (packet.attack) dy = -0.42;
         }
+
+        if (canWallClimb && packet.jump && mob.horizontalCollision) {
+            dy = 0.25;
+        }
+
+        mob.setDeltaMovement(dx, dy, dz);
+        mob.hasImpulse = true;
 
         if (packet.jump && mob.onGround() && !canFly && !canSwim) {
             mob.setDeltaMovement(mob.getDeltaMovement().x, 0.42, mob.getDeltaMovement().z);
@@ -102,8 +105,9 @@ public class EntityPossessionController {
         }
     }
 
+    // Cancel on shift (sneak) only
     public static boolean shouldCancel(Player player) {
-        return player.isCrouching() && player.isUsingItem();
+        return player.isCrouching();
     }
 
     public static LivingEntity getEntity(Level level, UUID id) {
@@ -123,8 +127,6 @@ public class EntityPossessionController {
         double z = entity.getZ();
         for (int i = 0; i < 4; i++) {
             level.addParticle(ParticleTypes.ENCHANT, x, y, z, 0, 0.1, 0);
-            // custom particle option:
-            // level.addParticle(YourParticles.REALITY_STONE_EFFECT_ONE.get(), x, y, z, 0, 0.1, 0);
         }
     }
 }

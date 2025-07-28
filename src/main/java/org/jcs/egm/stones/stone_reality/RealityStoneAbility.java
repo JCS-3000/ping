@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 public class RealityStoneAbility implements IGStoneAbility {
     private static final int COOLDOWN_TICKS_HAND = 120; // 6 seconds
-    private static final int COOLDOWN_TICKS_GAUNTLET = 40; // 2 seconds
+    private static final int COOLDOWN_TICKS_GAUNTLET = 10; // .5 seconds
     private static final double MAX_RANGE = 50.0D;
 
     @Override
@@ -45,8 +45,8 @@ public class RealityStoneAbility implements IGStoneAbility {
                 ? stack
                 : player.getMainHandItem();
 
-        // Silent cooldown check
         if (player.getCooldowns().isOnCooldown(cooldownStack.getItem())) {
+            System.out.println("[RealityStone] On cooldown.");
             return;
         }
 
@@ -62,8 +62,9 @@ public class RealityStoneAbility implements IGStoneAbility {
         // Raytrace setup
         Vec3 eye = player.getEyePosition(1.0F);
         Vec3 look = player.getLookAngle();
-        Vec3 start = eye.add(look.scale(1.2));
+        Vec3 start = eye;
         Vec3 end = start.add(look.scale(MAX_RANGE));
+        System.out.println("[RealityStone] start=" + start + " end=" + end);
 
         EntityHitResult entityResult = getEntityHitResult(level, player, start, end);
         BlockHitResult blockResult = level.clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
@@ -71,21 +72,37 @@ public class RealityStoneAbility implements IGStoneAbility {
         double entityDist = entityResult != null ? entityResult.getLocation().distanceTo(start) : Double.POSITIVE_INFINITY;
         double blockDist = blockResult != null ? blockResult.getLocation().distanceTo(start) : Double.POSITIVE_INFINITY;
 
-        // Particle
-        spawnBeamParticles((ServerLevel) level, start, (entityDist < blockDist ? entityResult.getLocation() : blockResult.getLocation()));
+        // Particle beam
+        spawnBeamParticles((ServerLevel) level, start, (entityDist < blockDist && entityResult != null) ? entityResult.getLocation() : blockResult.getLocation());
 
         boolean transformed = false;
 
         // Priority: Mob > Block
         if (entityResult != null && entityDist <= MAX_RANGE && entityDist < blockDist) {
             Entity hitEntity = entityResult.getEntity();
+            System.out.println("[RealityStone] Entity hit: " + hitEntity);
             if (hitEntity instanceof LivingEntity living && !(hitEntity instanceof Player)) {
-                transformed = tryReplaceMob((ServerLevel) level, living, player);
+                ResourceLocation mobId = ForgeRegistries.ENTITY_TYPES.getKey(living.getType());
+                System.out.println("[RealityStone] Mob entity type: " + mobId);
+                boolean hard = RealityStoneBlacklistHelper.isHardcodedEntityBlacklisted(mobId);
+                boolean config = RealityStoneBlacklistHelper.isConfigEntityBlacklisted(mobId);
+                System.out.println("[RealityStone] Blacklist? hard=" + hard + ", config=" + config);
+                if (!hard && !config) {
+                    System.out.println("[RealityStone] Attempting mob transformation!");
+                    transformed = tryReplaceMob((ServerLevel) level, living, player);
+                    System.out.println("[RealityStone] Mob transformation success: " + transformed);
+                } else {
+                    System.out.println("[RealityStone] Mob is blacklisted: " + mobId);
+                }
             }
         } else if (blockResult != null && blockDist <= MAX_RANGE) {
             BlockPos blockPos = blockResult.getBlockPos();
             BlockState oldState = level.getBlockState(blockPos);
-            if (!oldState.isAir() && tryReplaceBlock((ServerLevel) level, blockPos, oldState, player)) {
+            ResourceLocation blockId = ForgeRegistries.BLOCKS.getKey(oldState.getBlock());
+            boolean hard = RealityStoneBlacklistHelper.isHardcodedBlacklisted(blockId);
+            boolean config = RealityStoneBlacklistHelper.isConfigBlacklisted(blockId);
+            System.out.println("[RealityStone] Block: " + blockId + " hard=" + hard + " config=" + config);
+            if (!oldState.isAir() && !hard && !config && tryReplaceBlock((ServerLevel) level, blockPos, oldState, player)) {
                 transformed = true;
             }
         }
@@ -100,25 +117,36 @@ public class RealityStoneAbility implements IGStoneAbility {
     @Override
     public boolean canHoldUse() { return false; }
 
-    // (Helpers unchanged...)
-
+    // Robust vanilla-style entity raytrace (never misses)
     private EntityHitResult getEntityHitResult(Level level, Player player, Vec3 start, Vec3 end) {
-        AABB box = new AABB(start, end).inflate(1.0D);
-        List<Entity> entities = level.getEntities(player, box, e -> e instanceof LivingEntity && !(e instanceof Player));
-        EntityHitResult best = null;
-        double bestDist = Double.POSITIVE_INFINITY;
-        for (Entity entity : entities) {
-            AABB entityBB = entity.getBoundingBox().inflate(0.25D);
-            Optional<Vec3> intercept = entityBB.clip(start, end);
+        EntityHitResult result = null;
+        double closest = MAX_RANGE;
+        Entity lookedEntity = null;
+
+        List<Entity> list = level.getEntities(player,
+                player.getBoundingBox()
+                        .expandTowards(end.subtract(start))
+                        .inflate(1.0D),
+                e -> e instanceof LivingEntity && !(e instanceof Player)
+        );
+
+        System.out.println("[RealityStone] Found " + list.size() + " entities in bounding box.");
+
+        for (Entity entity : list) {
+            AABB aabb = entity.getBoundingBox().inflate(0.3D);
+            Optional<Vec3> intercept = aabb.clip(start, end);
             if (intercept.isPresent()) {
                 double dist = start.distanceTo(intercept.get());
-                if (dist < bestDist && dist <= MAX_RANGE) {
-                    bestDist = dist;
-                    best = new EntityHitResult(entity, intercept.get());
+                System.out.println("[RealityStone] Intercept: " + entity + " dist=" + dist);
+                if (dist < closest) {
+                    lookedEntity = entity;
+                    closest = dist;
+                    result = new EntityHitResult(entity, intercept.get());
                 }
             }
         }
-        return best;
+        System.out.println("[RealityStone] Closest entity: " + (lookedEntity != null ? lookedEntity : "none"));
+        return result;
     }
 
     private void spawnBeamParticles(ServerLevel level, Vec3 from, Vec3 to) {
@@ -145,13 +173,25 @@ public class RealityStoneAbility implements IGStoneAbility {
     private boolean tryReplaceMob(ServerLevel level, LivingEntity target, Player player) {
         List<EntityType<?>> available = ForgeRegistries.ENTITY_TYPES.getValues().stream()
                 .filter(type -> type != target.getType())
-                .filter(type -> Mob.class.isAssignableFrom(type.getBaseClass()))
+                .filter(type -> {
+                    try {
+                        Entity e = type.create(level);
+                        return e instanceof Mob;
+                    } catch (Exception ex) {
+                        return false;
+                    }
+                })
                 .collect(Collectors.toList());
+        System.out.println("[RealityStone] Available mob types: " + available.size());
         if (available.isEmpty()) return false;
         RandomSource rand = level.getRandom();
         EntityType<?> pick = available.get(rand.nextInt(available.size()));
+        System.out.println("[RealityStone] Picked mob: " + pick);
         Mob mob = (Mob) pick.create(level);
-        if (mob == null) return false;
+        if (mob == null) {
+            System.out.println("[RealityStone] Failed to create new mob entity.");
+            return false;
+        }
         mob.moveTo(target.getX(), target.getY(), target.getZ(), target.getYRot(), target.getXRot());
         target.discard();
         level.addFreshEntity(mob);
@@ -159,11 +199,8 @@ public class RealityStoneAbility implements IGStoneAbility {
         return true;
     }
 
+
     private boolean tryReplaceBlock(ServerLevel level, BlockPos pos, BlockState oldState, Player player) {
-        ResourceLocation oldId = ForgeRegistries.BLOCKS.getKey(oldState.getBlock());
-        if (oldId != null && oldId.toString().equals("minecraft:bedrock")) {
-            return false;
-        }
         List<Block> available = ForgeRegistries.BLOCKS.getValues().stream()
                 .filter(block -> block != oldState.getBlock())
                 .filter(block -> block.defaultBlockState().isCollisionShapeFullBlock(level, pos))
