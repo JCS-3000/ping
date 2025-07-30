@@ -1,10 +1,11 @@
 package org.jcs.egm.stones.stone_power;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientboundBlockDestructionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -21,9 +22,7 @@ import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
 import org.jcs.egm.stones.StoneUseDamage;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class PowerStoneAbility implements IGStoneAbility {
 
@@ -31,11 +30,22 @@ public class PowerStoneAbility implements IGStoneAbility {
     private final Map<UUID, Integer> bedrockHitTicks = new HashMap<>();
     private final Map<BlockPos, Integer> miningTicks = new HashMap<>();
     private final Map<UUID, BlockPos> lastBlockHit = new HashMap<>();
-    private static final int BEDROCK_BREAK_TICKS = 120;
-    private static final int CHARGE_TICKS = 20;
-    private static final int MAX_HAND_BEAM_TICKS = 60;
-
     private final Map<UUID, Integer> handUseTicks = new HashMap<>();
+
+    // Sound state tracking
+    private final Set<UUID> chargingSoundPlayers = new HashSet<>();
+    private final Set<UUID> firingSoundPlayers = new HashSet<>();
+    private final Map<UUID, Integer> firingSoundStartTick = new HashMap<>();
+
+
+    private static final int FIRING_SOUND_LENGTH_TICKS = 160; // For 8 seconds
+    private static final SoundEvent CHARGING_SOUND = SoundEvent.createVariableRangeEvent(new net.minecraft.resources.ResourceLocation("egm", "power_stone_charging"));
+    private static final SoundEvent FIRING_SOUND   = SoundEvent.createVariableRangeEvent(new net.minecraft.resources.ResourceLocation("egm", "power_stone_firing"));
+
+    // Divide by 20 for seconds
+    private static final int BEDROCK_BREAK_TICKS = 300;
+    private static final int CHARGE_TICKS = 60;
+    private static final int MAX_HAND_BEAM_TICKS = 60;
 
     private boolean isInGauntlet(Player player) {
         ItemStack main = player.getMainHandItem();
@@ -56,27 +66,72 @@ public class PowerStoneAbility implements IGStoneAbility {
         int ticksHeld = useDuration - count;
         boolean inGauntlet = isInGauntlet(player);
 
+        UUID uuid = player.getUUID();
+
+        // --- CHARGING PHASE ---
         if (ticksHeld < CHARGE_TICKS) {
             if (level.isClientSide && ticksHeld % 4 == 0) spawnChargeParticles(level, player);
-            if (!inGauntlet && !handUseTicks.containsKey(player.getUUID())) handUseTicks.put(player.getUUID(), 0);
+
+            if (!inGauntlet && !handUseTicks.containsKey(uuid)) handUseTicks.put(uuid, 0);
+
+            // ---- Play charging sound if not already playing ----
+            if (level.isClientSide) {
+                if (!chargingSoundPlayers.contains(uuid)) {
+                    player.level().playLocalSound(player.getX(), player.getY(), player.getZ(),
+                            CHARGING_SOUND, SoundSource.PLAYERS,
+                            0.8f, 1.0f, false);
+                    chargingSoundPlayers.add(uuid);
+                }
+                // Make sure firing sound is NOT playing
+                if (firingSoundPlayers.contains(uuid)) {
+                    if (Minecraft.getInstance().player != null) {
+                        Minecraft.getInstance().getSoundManager().stop(FIRING_SOUND.getLocation(), SoundSource.PLAYERS);
+                    }
+                    firingSoundPlayers.remove(uuid);
+                    firingSoundStartTick.remove(uuid);
+                }
+            }
             return;
         }
 
+        // --- FIRING PHASE ---
         if (!inGauntlet) {
             player.hurt(StoneUseDamage.get(level, player), 2.0F);
-            int ticks = handUseTicks.getOrDefault(player.getUUID(), 0) + 1;
-            handUseTicks.put(player.getUUID(), ticks);
+            int ticks = handUseTicks.getOrDefault(uuid, 0) + 1;
+            handUseTicks.put(uuid, ticks);
             if (ticks >= MAX_HAND_BEAM_TICKS) {
                 player.releaseUsingItem();
                 return;
             }
         } else {
-            handUseTicks.remove(player.getUUID());
+            handUseTicks.remove(uuid);
+        }
+
+        if (level.isClientSide) {
+            // Stop charging sound
+            if (chargingSoundPlayers.contains(uuid)) {
+                if (Minecraft.getInstance().player != null) {
+                    Minecraft.getInstance().getSoundManager().stop(CHARGING_SOUND.getLocation(), SoundSource.PLAYERS);
+                }
+                chargingSoundPlayers.remove(uuid);
+            }
+            // Start or re-trigger firing sound
+            int currentTick = Minecraft.getInstance().level != null ? (int)Minecraft.getInstance().level.getGameTime() : 0;
+            Integer startedAt = firingSoundStartTick.get(uuid);
+            boolean needsNewSound = !firingSoundPlayers.contains(uuid)
+                    || startedAt == null
+                    || (currentTick - startedAt) >= FIRING_SOUND_LENGTH_TICKS;
+            if (needsNewSound) {
+                player.level().playLocalSound(player.getX(), player.getY(), player.getZ(),
+                        FIRING_SOUND, SoundSource.PLAYERS,
+                        1.0f, 1.0f, true); // true = loop
+                firingSoundPlayers.add(uuid);
+                firingSoundStartTick.put(uuid, currentTick);
+            }
         }
 
         if (level.isClientSide) return;
 
-        UUID uuid = player.getUUID();
         PowerStoneLightningEntity beam = activeBeams.get(uuid);
 
         // === Correct Raytrace Origin: Player eye ===
@@ -107,16 +162,15 @@ public class PowerStoneAbility implements IGStoneAbility {
 
                 // Bedrock mining (unchanged)
                 if (blockState.getBlock() == Blocks.BEDROCK) {
-                    UUID playerId = player.getUUID();
-                    int prev = bedrockHitTicks.getOrDefault(playerId, 0);
-                    bedrockHitTicks.put(playerId, prev + 1);
+                    int prev = bedrockHitTicks.getOrDefault(uuid, 0);
+                    bedrockHitTicks.put(uuid, prev + 1);
 
                     if ((prev + 1) % 4 == 0 && level instanceof ServerLevel serverLevel) {
                         double soundRange = 16.0;
                         for (ServerPlayer sp : serverLevel.players()) {
                             if (sp.position().distanceTo(Vec3.atCenterOf(blockPos)) <= soundRange) {
                                 level.playSound(
-                                        null, blockPos, SoundEvents.STONE_HIT, SoundSource.BLOCKS, 0.5F, 1.0F
+                                        null, blockPos, net.minecraft.sounds.SoundEvents.STONE_HIT, SoundSource.BLOCKS, 0.5F, 1.0F
                                 );
                             }
                         }
@@ -128,7 +182,7 @@ public class PowerStoneAbility implements IGStoneAbility {
 
                     if (prev + 1 >= BEDROCK_BREAK_TICKS) {
                         level.destroyBlock(blockPos, true, player);
-                        bedrockHitTicks.remove(playerId);
+                        bedrockHitTicks.remove(uuid);
                     }
                 } else {
                     // Standard block mining (unchanged)
@@ -139,16 +193,16 @@ public class PowerStoneAbility implements IGStoneAbility {
                     requiredTicks = Math.max(minTicks, Math.min(maxTicks, requiredTicks));
 
                     int mined = miningTicks.getOrDefault(blockPos, 0) + 1;
-                    if (blockPos.equals(lastBlockHit.getOrDefault(player.getUUID(), null))) {
+                    if (blockPos.equals(lastBlockHit.getOrDefault(uuid, null))) {
                         miningTicks.put(blockPos, mined);
                     } else {
-                        BlockPos prevBlock = lastBlockHit.get(player.getUUID());
+                        BlockPos prevBlock = lastBlockHit.get(uuid);
                         if (prevBlock != null)
                             sendBlockBreakAnim(player, prevBlock, -1);
                         miningTicks.put(blockPos, 1);
                         mined = 1;
                     }
-                    lastBlockHit.put(player.getUUID(), blockPos);
+                    lastBlockHit.put(uuid, blockPos);
 
                     int progress = (int) ((float) mined / requiredTicks * 9.0f);
                     progress = Math.min(progress, 9);
@@ -157,7 +211,7 @@ public class PowerStoneAbility implements IGStoneAbility {
                     if (mined >= requiredTicks) {
                         level.destroyBlock(blockPos, true, player);
                         miningTicks.remove(blockPos);
-                        lastBlockHit.remove(player.getUUID());
+                        lastBlockHit.remove(uuid);
                         sendBlockBreakAnim(player, blockPos, -1);
                     }
                 }
@@ -181,11 +235,11 @@ public class PowerStoneAbility implements IGStoneAbility {
         }
         if (rayHit == null) rayHit = eye.add(look.scale(range));
 
-        if (!hitBlock || (hitBlock && thisHitBlock == null || level.getBlockState(thisHitBlock).getBlock() != Blocks.BEDROCK)) {
-            bedrockHitTicks.remove(player.getUUID());
+        if (!hitBlock || (hitBlock && (thisHitBlock == null || level.getBlockState(thisHitBlock).getBlock() != Blocks.BEDROCK))) {
+            bedrockHitTicks.remove(uuid);
         }
         if (!hitBlock) {
-            BlockPos prev = lastBlockHit.remove(player.getUUID());
+            BlockPos prev = lastBlockHit.remove(uuid);
             if (prev != null) {
                 miningTicks.remove(prev);
                 sendBlockBreakAnim(player, prev, -1);
@@ -197,14 +251,14 @@ public class PowerStoneAbility implements IGStoneAbility {
         Vec3 renderStart = chest.add(look.scale(0.2)); // adjust for hand if you wish
         Vec3 renderEnd = rayHit;
 
-        // Clamp beam so it never inverts or passes through player
         double toHit = renderStart.distanceTo(rayHit);
         double toEye = renderStart.distanceTo(eye);
         if (toHit < 0.1 || toHit < toEye) {
-            renderEnd = renderStart; // zero-length beam if hit is behind or inside player
+            renderEnd = renderStart;
         }
 
         // --- Create or update singleton beam entity ---
+        beam = activeBeams.get(uuid);
         if (beam == null || !beam.isAlive()) {
             beam = new PowerStoneLightningEntity(ModEntities.POWER_STONE_LIGHTNING.get(), (ServerLevel) level);
             level.addFreshEntity(beam);
@@ -212,44 +266,58 @@ public class PowerStoneAbility implements IGStoneAbility {
         }
         beam.setEndpoints(renderStart, renderEnd);
 
-        // --- Spiral particles around the beam ---
+        // --- Electrical particles flying off the beam ---
         if (level instanceof ServerLevel serverLevel) {
-            int spiralPoints = 16;
-            double radius = 0.4;
-            double beamLength = renderEnd.subtract(renderStart).length();
-            Vec3 direction = renderEnd.subtract(renderStart).normalize();
-            if (beamLength > 0.01) {
-                Vec3 orth = direction.cross(new Vec3(0, 1, 0)).normalize();
-                if (orth.lengthSqr() < 0.001) orth = new Vec3(1, 0, 0);
-                Vec3 up = orth.cross(direction).normalize();
-                for (int i = 0; i < spiralPoints; i++) {
-                    double t = (double) i / spiralPoints;
-                    double y = t * beamLength;
-                    double angle = t * 6.0 * Math.PI + player.tickCount * 0.3;
-                    double x = Math.cos(angle) * radius;
-                    double z = Math.sin(angle) * radius;
-                    Vec3 spiralOffset = orth.scale(x).add(up.scale(z));
-                    Vec3 particlePos = renderStart.add(direction.scale(y)).add(spiralOffset);
-                    serverLevel.sendParticles(
-                            ModParticles.POWER_STONE_EFFECT_ONE.get(),
-                            particlePos.x, particlePos.y, particlePos.z,
-                            1, 0, 0, 0, 0
-                    );
-                }
+            Vec3 beamVec = renderEnd.subtract(renderStart);
+            double beamLength = beamVec.length();
+            Vec3 direction = beamVec.normalize();
+            int sparkPoints = (int) (beamLength * 3.0); // 7 sparks per block, tweak as desired
+            net.minecraft.util.RandomSource rand = serverLevel.random;
+
+            for (int i = 0; i < sparkPoints; i++) {
+                double t = i / (double) sparkPoints;
+                Vec3 base = renderStart.add(direction.scale(t * beamLength));
+                Vec3 randomPerp = direction.cross(new Vec3(rand.nextDouble() - 0.5, rand.nextDouble() - 0.5, rand.nextDouble() - 0.5)).normalize();
+                double sparkLen = 0.4 + rand.nextDouble() * 0.3; // length of the spark
+                Vec3 sparkTarget = base.add(randomPerp.scale(sparkLen));
+                // Velocity outward
+                Vec3 velocity = sparkTarget.subtract(base).scale(0.3 + rand.nextDouble() * 0.3);
+                // Spawn the spark
+                serverLevel.sendParticles(
+                        ModParticles.POWER_STONE_EFFECT_ONE.get(),
+                        base.x, base.y, base.z,
+                        1,
+                        velocity.x, velocity.y, velocity.z, 0.0
+                );
             }
         }
+
     }
 
     @Override
     public void releaseUsing(Level level, Player player, ItemStack gauntletStack, int count) {
-        if (level.isClientSide) return;
         UUID uuid = player.getUUID();
-        PowerStoneLightningEntity beam = activeBeams.remove(uuid);
-        if (beam != null && beam.isAlive()) beam.discard();
 
-        bedrockHitTicks.remove(player.getUUID());
-        handUseTicks.remove(player.getUUID());
-        BlockPos prev = lastBlockHit.remove(player.getUUID());
+        // --- Stop all sounds on release ---
+        if (level.isClientSide) {
+            if (Minecraft.getInstance().player != null) {
+                Minecraft.getInstance().getSoundManager().stop(CHARGING_SOUND.getLocation(), SoundSource.PLAYERS);
+                Minecraft.getInstance().getSoundManager().stop(FIRING_SOUND.getLocation(), SoundSource.PLAYERS);
+            }
+            chargingSoundPlayers.remove(uuid);
+            firingSoundPlayers.remove(uuid);
+            firingSoundStartTick.remove(uuid);
+        }
+
+        // --- Beam logic ---
+        if (!level.isClientSide) {
+            PowerStoneLightningEntity beam = activeBeams.remove(uuid);
+            if (beam != null && beam.isAlive()) beam.discard();
+        }
+
+        bedrockHitTicks.remove(uuid);
+        handUseTicks.remove(uuid);
+        BlockPos prev = lastBlockHit.remove(uuid);
         if (prev != null) {
             miningTicks.remove(prev);
             if (!level.isClientSide)
@@ -263,9 +331,29 @@ public class PowerStoneAbility implements IGStoneAbility {
     }
 
     private void spawnChargeParticles(Level level, Player player) {
-        Vec3 look = player.getLookAngle();
-        Vec3 chest = player.position().add(0, 1.0, 0);
-        Vec3 pos = chest.add(look.scale(0.5));
-        level.addParticle(ModParticles.POWER_STONE_EFFECT_TWO.get(), pos.x, pos.y, pos.z, 0, 0.01, 0);
+        Vec3 gauntletPos = player.position().add(0, 1.0, 0); // Near chest/hand
+        net.minecraft.util.RandomSource rand = level.getRandom();
+
+        int numParticles = 14; // Number of inward-traveling particles per tick
+        double outerRadius = 2.2; // How far out the power is pulled from
+
+        for (int i = 0; i < numParticles; i++) {
+            // Random point on a sphere
+            double theta = rand.nextDouble() * 2 * Math.PI;
+            double phi = Math.acos(2 * rand.nextDouble() - 1);
+            double x = outerRadius * Math.sin(phi) * Math.cos(theta);
+            double y = outerRadius * Math.sin(phi) * Math.sin(theta);
+            double z = outerRadius * Math.cos(phi);
+
+            Vec3 start = gauntletPos.add(x, y, z);
+
+            // Direction vector: from start point toward the gauntlet
+            Vec3 velocity = gauntletPos.subtract(start).normalize().scale(0.22 + rand.nextDouble() * 0.12);
+
+            // Particle travels toward the gauntlet
+            level.addParticle(ModParticles.POWER_STONE_EFFECT_TWO.get(),
+                    start.x, start.y, start.z,
+                    velocity.x, velocity.y, velocity.z);
+        }
     }
 }

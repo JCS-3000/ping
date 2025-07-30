@@ -116,6 +116,30 @@ public class InfinityGauntletItem extends Item {
         }
     }
 
+    // ---------- method to propagate releaseUsing ----------
+    @Override
+    public void releaseUsing(ItemStack stack, Level level, LivingEntity entity, int timeLeft) {
+        if (entity instanceof Player player) {
+            ItemStackHandler handler = new ItemStackHandler(6);
+            if (stack.hasTag() && stack.getTag().contains("Stones")) {
+                handler.deserializeNBT(stack.getTag().getCompound("Stones"));
+            }
+            int idx = getSelectedStone(stack);
+            if (idx < 0 || idx >= handler.getSlots()) {
+                idx = 0;
+            }
+
+            ItemStack stoneStack = handler.getStackInSlot(idx);
+            if (!stoneStack.isEmpty() && stoneStack.getItem() instanceof StoneItem stoneItem) {
+                IGStoneAbility ability = org.jcs.egm.stones.StoneAbilities.REGISTRY.get(stoneItem.getKey());
+                if (ability != null && stoneItem.canHoldUse()) {
+                    // This is the key call: forwards releaseUsing!
+                    ability.releaseUsing(level, player, stoneStack, timeLeft);
+                }
+            }
+        }
+    }
+    // --------------------------------------------------------------------
 
     public static ItemStack getStoneStack(ItemStack gauntlet, int slot) {
         ItemStackHandler handler = new ItemStackHandler(6);

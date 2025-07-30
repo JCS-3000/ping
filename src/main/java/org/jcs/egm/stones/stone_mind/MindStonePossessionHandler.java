@@ -32,7 +32,6 @@ public class MindStonePossessionHandler {
 
         if (player instanceof ServerPlayer sp) {
             NetworkHandler.sendStartPossessionPacket(sp, durationTicks, target.getId());
-
         }
 
         MinecraftForge.EVENT_BUS.register(info);

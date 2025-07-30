@@ -3,7 +3,7 @@ package org.jcs.egm.stones.stone_reality;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -34,6 +34,10 @@ public class RealityStoneAbility implements IGStoneAbility {
     private static final int COOLDOWN_TICKS_GAUNTLET = 10; // .5 seconds
     private static final double MAX_RANGE = 50.0D;
 
+    // NEW: Custom Reality Stone sounds
+    private static final SoundEvent BEAM_SOUND   = SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "reality_stone_beam"));
+    private static final SoundEvent CHANGE_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "reality_stone_change"));
+
     @Override
     public void activate(Level level, Player player, ItemStack stack) {
         if (level.isClientSide) return;
@@ -56,8 +60,8 @@ public class RealityStoneAbility implements IGStoneAbility {
             player.hurt(StoneUseDamage.get(level, player), 4.0F);
         }
 
-        // Play activation sound
-        level.playSound(null, player.blockPosition(), SoundEvents.NOTE_BLOCK_BELL.get(), SoundSource.PLAYERS, 0.6F, 1.6F);
+        // --- PLAY NEW BEAM FIRING SOUND ---
+        level.playSound(null, player.blockPosition(), BEAM_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F);
 
         // Raytrace setup
         Vec3 eye = player.getEyePosition(1.0F);
@@ -76,6 +80,8 @@ public class RealityStoneAbility implements IGStoneAbility {
         spawnBeamParticles((ServerLevel) level, start, (entityDist < blockDist && entityResult != null) ? entityResult.getLocation() : blockResult.getLocation());
 
         boolean transformed = false;
+        boolean playChangeSound = false;
+        Vec3 soundPos = null;
 
         // Priority: Mob > Block
         if (entityResult != null && entityDist <= MAX_RANGE && entityDist < blockDist) {
@@ -90,6 +96,8 @@ public class RealityStoneAbility implements IGStoneAbility {
                 if (!hard && !config) {
                     System.out.println("[RealityStone] Attempting mob transformation!");
                     transformed = tryReplaceMob((ServerLevel) level, living, player);
+                    playChangeSound = transformed;
+                    soundPos = entityResult.getLocation();
                     System.out.println("[RealityStone] Mob transformation success: " + transformed);
                 } else {
                     System.out.println("[RealityStone] Mob is blacklisted: " + mobId);
@@ -104,13 +112,14 @@ public class RealityStoneAbility implements IGStoneAbility {
             System.out.println("[RealityStone] Block: " + blockId + " hard=" + hard + " config=" + config);
             if (!oldState.isAir() && !hard && !config && tryReplaceBlock((ServerLevel) level, blockPos, oldState, player)) {
                 transformed = true;
+                playChangeSound = true;
+                soundPos = blockResult.getLocation();
             }
         }
 
-        // Play a transformation sound at the hit point if something changed
-        if (transformed) {
-            Vec3 soundPos = (entityDist < blockDist && entityResult != null) ? entityResult.getLocation() : blockResult.getLocation();
-            level.playSound(null, soundPos.x, soundPos.y, soundPos.z, SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.85F, 1.0F);
+        // --- PLAY NEW CHANGE SOUND AT IMPACT IF TRANSFORMATION HAPPENED ---
+        if (playChangeSound && soundPos != null) {
+            level.playSound(null, soundPos.x, soundPos.y, soundPos.z, CHANGE_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F);
         }
     }
 
@@ -198,7 +207,6 @@ public class RealityStoneAbility implements IGStoneAbility {
         spawnBurstParticles(level, mob.position());
         return true;
     }
-
 
     private boolean tryReplaceBlock(ServerLevel level, BlockPos pos, BlockState oldState, Player player) {
         List<Block> available = ForgeRegistries.BLOCKS.getValues().stream()

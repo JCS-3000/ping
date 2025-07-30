@@ -17,7 +17,7 @@ public class PowerStoneEffectOne extends TextureSheetParticle {
         this.zd = zd;
 
         this.quadSize *= 0.5F;
-        this.lifetime = 20 + this.random.nextInt(10);
+        this.lifetime = 5 + this.random.nextInt(5);
         this.gravity = 0.0F;
 
         pickSprite(spriteSet); // Randomly pick one of the available particle textures

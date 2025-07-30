@@ -17,41 +17,6 @@ import static net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.FORGE;
 public class ClientModEvents {
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-
-        Minecraft mc = Minecraft.getInstance();
-        LocalPlayer player = mc.player;
-        // KEY CHANGE: Use tracker, not overlay!
-        if (player == null || !ClientPossessionTracker.isPossessing()) return;
-
-        // Movement keys
-        float strafe = 0f, forward = 0f;
-        if (mc.options.keyUp.isDown())    forward += 1f;
-        if (mc.options.keyDown.isDown())  forward -= 1f;
-        if (mc.options.keyLeft.isDown())  strafe  += 1f;
-        if (mc.options.keyRight.isDown()) strafe  -= 1f;
-        boolean jump   = mc.options.keyJump.isDown();
-        boolean attack = mc.options.keyAttack.isDown();
-        System.out.println("[CLIENT] strafe=" + strafe + " forward=" + forward + " jump=" + jump + " attack=" + attack);
-
-        // Mouse look
-        float yaw   = player.getYRot();
-        float pitch = player.getXRot();
-
-        // Send to server
-        NetworkHandler.INSTANCE.sendToServer(
-                new PossessionControlPacket(strafe, forward, jump, attack, yaw, pitch)
-        );
-
-        // Suppress local player movement/inputs
-        player.input.leftImpulse    = 0f;
-        player.input.forwardImpulse = 0f;
-        mc.options.keyJump.setDown(false);
-        mc.options.keyAttack.setDown(false);
-    }
-
-    @SubscribeEvent
     public static void onAttack(AttackEntityEvent event) {
         if (ClientPossessionTracker.isPossessing()) {
             event.setCanceled(true);

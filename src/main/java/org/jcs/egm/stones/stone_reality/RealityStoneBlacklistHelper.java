@@ -192,7 +192,8 @@ public class RealityStoneBlacklistHelper {
             "minecraft:yellow_banner",
             "minecraft:yellow_bed",
             // big boy bans
-            "minecraft:jigsaw"
+            "minecraft:jigsaw",
+            "minecraft:bedrock"
     );
 
     public static boolean isHardcodedBlacklisted(ResourceLocation id) {
