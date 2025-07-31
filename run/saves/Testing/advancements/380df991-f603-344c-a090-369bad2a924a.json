@@ -121,6 +121,7 @@
   },
   "minecraft:adventure/kill_all_mobs": {
     "criteria": {
+      "minecraft:wither_skeleton": "2025-07-31 18:04:00 -0400",
       "minecraft:enderman": "2025-07-17 20:43:01 -0400",
       "minecraft:zombie": "2025-07-22 21:18:24 -0400"
     },
@@ -561,6 +562,48 @@
   "minecraft:recipes/redstone/oak_button": {
     "criteria": {
       "has_planks": "2025-07-29 23:21:51 -0400"
+    },
+    "done": true
+  },
+  "minecraft:recipes/misc/black_dye": {
+    "criteria": {
+      "has_ink_sac": "2025-07-30 12:46:48 -0400"
+    },
+    "done": true
+  },
+  "minecraft:recipes/food/cooked_chicken_from_campfire_cooking": {
+    "criteria": {
+      "has_chicken": "2025-07-31 08:52:14 -0400"
+    },
+    "done": true
+  },
+  "minecraft:recipes/food/cooked_chicken": {
+    "criteria": {
+      "has_chicken": "2025-07-31 08:52:14 -0400"
+    },
+    "done": true
+  },
+  "minecraft:recipes/food/cooked_chicken_from_smoking": {
+    "criteria": {
+      "has_chicken": "2025-07-31 08:52:14 -0400"
+    },
+    "done": true
+  },
+  "minecraft:recipes/combat/arrow": {
+    "criteria": {
+      "has_feather": "2025-07-31 08:52:14 -0400"
+    },
+    "done": true
+  },
+  "minecraft:recipes/misc/gold_nugget_from_smelting": {
+    "criteria": {
+      "has_golden_sword": "2025-07-31 18:06:18 -0400"
+    },
+    "done": true
+  },
+  "minecraft:recipes/misc/gold_nugget_from_blasting": {
+    "criteria": {
+      "has_golden_sword": "2025-07-31 18:06:18 -0400"
     },
     "done": true
   },

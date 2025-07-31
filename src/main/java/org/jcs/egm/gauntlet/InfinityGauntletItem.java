@@ -49,18 +49,6 @@ public class InfinityGauntletItem extends Item {
     public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level level, Player player, @NotNull InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
 
-        // Open GUI on shift + right-click
-        if (player.isShiftKeyDown()) {
-            if (!level.isClientSide && player instanceof ServerPlayer sp) {
-                NetworkHooks.openScreen(
-                        sp,
-                        new InfinityGauntletMenu.Provider(stack),
-                        buf -> buf.writeItem(stack)
-                );
-            }
-            return InteractionResultHolder.success(stack);
-        }
-
         // Load gauntlet inventory from NBT
         ItemStackHandler handler = new ItemStackHandler(6);
         if (stack.hasTag() && stack.getTag().contains("Stones")) {

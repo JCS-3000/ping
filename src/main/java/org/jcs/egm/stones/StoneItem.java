@@ -61,12 +61,11 @@ public class StoneItem extends Item {
         if (ability.canHoldUse()) {
             player.startUsingItem(hand);
         }
-        if (!level.isClientSide) {
-            ability.activate(level, player, stack);
-        }
+        ability.activate(level, player, stack);
 
         return InteractionResultHolder.success(stack);
     }
+
 
     @Override
     public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int count) {

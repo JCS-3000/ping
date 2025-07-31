@@ -21,6 +21,7 @@ public class NetworkHandler {
     public static void register() {
         int id = 0;
 
+        // Gauntlet-selected-stone packet (unrelated to Mind Stone)
         INSTANCE.registerMessage(
                 id++,
                 GauntletSelectedStonePacket.class,
@@ -30,50 +31,14 @@ public class NetworkHandler {
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
 
-        // Start possession → client
         INSTANCE.registerMessage(
                 id++,
-                StartPossessionPacket.class,
-                StartPossessionPacket::encode,
-                StartPossessionPacket::decode,
-                (msg, ctx) -> msg.handle(ctx),
-                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
-        );
-
-        // End possession → client
-        INSTANCE.registerMessage(
-                id++,
-                EndPossessionPacket.class,
-                EndPossessionPacket::encode,
-                EndPossessionPacket::decode,
-                (msg, ctx) -> msg.handle(ctx),
-                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
-        );
-
-        // Possession control → server
-        INSTANCE.registerMessage(
-                id++,
-                PossessionControlPacket.class,
-                PossessionControlPacket::encode,
-                PossessionControlPacket::decode,
+                OpenGauntletMenuPacket.class,
+                OpenGauntletMenuPacket::encode,
+                OpenGauntletMenuPacket::decode,
                 (msg, ctx) -> msg.handle(ctx),
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
-    }
 
-    /** Server → client: start overlay & camera switch */
-    public static void sendStartPossessionPacket(ServerPlayer player, int duration, int entityId) {
-        INSTANCE.send(
-                PacketDistributor.PLAYER.with(() -> player),
-                new StartPossessionPacket(duration, entityId)
-        );
-    }
-
-    /** Server → client: end overlay & reset camera */
-    public static void sendEndPossessionPacket(ServerPlayer player) {
-        INSTANCE.send(
-                PacketDistributor.PLAYER.with(() -> player),
-                new EndPossessionPacket()
-        );
     }
 }
