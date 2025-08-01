@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PowerStoneAbilityRegistry {
+
     // Register all Power Stone abilities here in order
     public static final IGStoneAbility INFINITE_LIGHTNING = new InfiniteLightningPowerStoneAbility();
     // public static final IGStoneAbility YOUR_NEXT_ABILITY = new YourNextPowerAbility();

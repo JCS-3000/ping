@@ -8,7 +8,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.jcs.egm.egm;
 import org.jcs.egm.gauntlet.InfinityGauntletMenu;
-import org.jcs.egm.holders.StoneHolderMenu; // <-- added
+import org.jcs.egm.holders.StoneHolderMenu;
 
 public class ModMenuTypes {
     public static final DeferredRegister<MenuType<?>> MENUS =

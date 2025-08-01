@@ -8,56 +8,39 @@ import net.minecraftforge.registries.RegistryObject;
 import org.jcs.egm.egm;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
 import org.jcs.egm.holders.StoneHolderItem;
-import org.jcs.egm.stones.StoneItem;
-
+import org.jcs.egm.stones.stone_mind.MindStoneItem;
+import org.jcs.egm.stones.stone_power.PowerStoneItem;
+import org.jcs.egm.stones.stone_reality.RealityStoneItem;
+import org.jcs.egm.stones.stone_soul.SoulStoneItem;
+import org.jcs.egm.stones.stone_space.SpaceStoneItem;
+import org.jcs.egm.stones.stone_time.TimeStoneItem;
 
 public class ModItems {
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, egm.MODID);
 
-    // THE STONES
-
+    // THE STONES (now each is its own class!)
     public static final RegistryObject<Item> MIND_STONE =
-            ITEMS.register(
-                    "mind_stone", () -> new StoneItem("mind",
-                            0xffdd00, new Item.Properties().stacksTo(1)));
-
+            ITEMS.register("mind_stone", () -> new MindStoneItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> POWER_STONE =
-            ITEMS.register(
-                    "power_stone", () -> new StoneItem("power",
-                            0x75179C, new Item.Properties().stacksTo(1)));
-
+            ITEMS.register("power_stone", () -> new PowerStoneItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> SPACE_STONE =
-            ITEMS.register(
-                    "space_stone", () -> new StoneItem("space",
-                            0x283095, new Item.Properties().stacksTo(1)));
-
+            ITEMS.register("space_stone", () -> new SpaceStoneItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> REALITY_STONE =
-            ITEMS.register(
-                    "reality_stone", () -> new StoneItem("reality",
-                            0xD10018, new Item.Properties().stacksTo(1)));
-
+            ITEMS.register("reality_stone", () -> new RealityStoneItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> TIME_STONE =
-            ITEMS.register(
-                    "time_stone", () -> new StoneItem("time",
-                            0x085828, new Item.Properties().stacksTo(1)));
-
+            ITEMS.register("time_stone", () -> new TimeStoneItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> SOUL_STONE =
-            ITEMS.register(
-                    "soul_stone", () -> new StoneItem("soul",
-                            0xD5700E, new Item.Properties().stacksTo(1)));
+            ITEMS.register("soul_stone", () -> new SoulStoneItem(new Item.Properties().stacksTo(1)));
 
     // THE GAUNTLET
-
     public static final RegistryObject<Item> INFINITY_GAUNTLET =
-            ITEMS.register("infinity_gauntlet", () -> new InfinityGauntletItem(new
-                    Item.Properties()
-                    .stacksTo(1)
-                    .rarity(Rarity.EPIC)));
+            ITEMS.register("infinity_gauntlet", () -> new InfinityGauntletItem(
+                    new Item.Properties()
+                            .stacksTo(1)
+                            .rarity(Rarity.EPIC)));
 
     // STONE HOLDERS
-
-    // --- Stone Holders ---
     public static final RegistryObject<Item> MIND_STONE_HOLDER =
             ITEMS.register("lokian_scepter", () -> new StoneHolderItem("mind", new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> POWER_STONE_HOLDER =
@@ -72,11 +55,9 @@ public class ModItems {
             ITEMS.register("eye_of_agamotto", () -> new StoneHolderItem("time", new Item.Properties().stacksTo(1)));
 
     // URU
-
     public static final RegistryObject<Item> INGOT_URU = ITEMS.register("ingot_uru",
             () -> new Item(new Item.Properties()
                     .rarity(Rarity.UNCOMMON)
                     .stacksTo(64)
             ));
-
 }

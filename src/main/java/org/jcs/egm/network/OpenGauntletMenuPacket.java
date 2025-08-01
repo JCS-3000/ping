@@ -1,12 +1,11 @@
 package org.jcs.egm.network;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
-import org.jcs.egm.gauntlet.InfinityGauntletMenu;
+import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkHooks;
+import org.jcs.egm.gauntlet.InfinityGauntletMenu;
 
 import java.util.function.Supplier;
 

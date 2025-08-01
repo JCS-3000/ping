@@ -18,7 +18,6 @@ import net.minecraftforge.items.ItemStackHandler;
 import org.jcs.egm.registry.ModItems;
 import org.jcs.egm.stones.IGStoneAbility;
 import org.jcs.egm.stones.StoneAbilityRegistries;
-import org.jcs.egm.stones.StoneItem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -52,7 +51,7 @@ public class InfinityGauntletItem extends Item {
             handler.deserializeNBT(stack.getTag().getCompound("Stones"));
         }
         ItemStack stoneStack = handler.getStackInSlot(idx);
-        if (!stoneStack.isEmpty() && stoneStack.getItem() instanceof StoneItem stoneItem) {
+        if (!stoneStack.isEmpty()) {
             IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneKey, stoneStack);
             if (ability != null && ability.canHoldUse()) {
                 player.startUsingItem(hand);
@@ -78,9 +77,10 @@ public class InfinityGauntletItem extends Item {
             }
 
             ItemStack stoneStack = handler.getStackInSlot(idx);
-            if (!stoneStack.isEmpty() && stoneStack.getItem() instanceof StoneItem stoneItem) {
-                IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneItem.getKey(), stoneStack);
-                if (ability != null && stoneItem.canHoldUse(stoneStack)) {
+            if (!stoneStack.isEmpty()) {
+                String stoneKey = getSelectedStoneName(stack);
+                IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneKey, stoneStack);
+                if (ability != null && ability.canHoldUse()) {
                     ability.onUsingTick(level, player, stoneStack, count);
                 }
             }
@@ -100,9 +100,10 @@ public class InfinityGauntletItem extends Item {
             }
 
             ItemStack stoneStack = handler.getStackInSlot(idx);
-            if (!stoneStack.isEmpty() && stoneStack.getItem() instanceof StoneItem stoneItem) {
-                IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneItem.getKey(), stoneStack);
-                if (ability != null && stoneItem.canHoldUse(stoneStack)) {
+            if (!stoneStack.isEmpty()) {
+                String stoneKey = getSelectedStoneName(stack);
+                IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneKey, stoneStack);
+                if (ability != null && ability.canHoldUse()) {
                     ability.releaseUsing(level, player, stoneStack, timeLeft);
                 }
             }

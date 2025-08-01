@@ -1,4 +1,4 @@
-package org.jcs.egm.stones.effects;
+package org.jcs.egm.stones;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;

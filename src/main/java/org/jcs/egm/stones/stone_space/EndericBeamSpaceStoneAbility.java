@@ -25,7 +25,7 @@ public class EndericBeamSpaceStoneAbility implements IGStoneAbility {
         // Raytrace for teleport destination
         HitResult hit = player.pick(range, 1.0F, false);
 
-        Vec3 dest = null;
+        Vec3 dest;
         if (hit.getType() == HitResult.Type.BLOCK) {
             dest = hit.getLocation();
         } else if (hit.getType() == HitResult.Type.ENTITY) {

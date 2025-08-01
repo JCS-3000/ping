@@ -20,7 +20,7 @@ import org.jcs.egm.entity.PowerStoneLightningEntity;
 import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.effects.StoneUseDamage;
+import org.jcs.egm.stones.StoneUseDamage;
 
 import java.util.*;
 
@@ -36,7 +36,6 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
     private final Set<UUID> chargingSoundPlayers = new HashSet<>();
     private final Set<UUID> firingSoundPlayers = new HashSet<>();
     private final Map<UUID, Integer> firingSoundStartTick = new HashMap<>();
-
 
     private static final int FIRING_SOUND_LENGTH_TICKS = 160; // For 8 seconds
     private static final SoundEvent CHARGING_SOUND = SoundEvent.createVariableRangeEvent(new net.minecraft.resources.ResourceLocation("egm", "power_stone_charging"));
@@ -215,7 +214,7 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
                         sendBlockBreakAnim(player, blockPos, -1);
                     }
                 }
-                break outer;
+                break;
             }
 
             // Entity hit (unchanged)
@@ -260,7 +259,7 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
         // --- Create or update singleton beam entity ---
         beam = activeBeams.get(uuid);
         if (beam == null || !beam.isAlive()) {
-            beam = new PowerStoneLightningEntity(ModEntities.POWER_STONE_LIGHTNING.get(), (ServerLevel) level);
+            beam = new PowerStoneLightningEntity(ModEntities.POWER_STONE_LIGHTNING.get(), level);
             level.addFreshEntity(beam);
             activeBeams.put(uuid, beam);
         }

@@ -2,6 +2,7 @@ package org.jcs.egm.stones.stone_reality;
 
 import net.minecraft.network.chat.Component;
 import org.jcs.egm.stones.IGStoneAbility;
+
 import java.util.ArrayList;
 import java.util.List;
 

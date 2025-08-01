@@ -21,7 +21,8 @@ import net.minecraft.world.phys.AABB;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.effects.StoneUseDamage;
+import org.jcs.egm.stones.StoneItem;
+import org.jcs.egm.stones.StoneUseDamage;
 
 import java.util.HashSet;
 import java.util.List;
@@ -37,8 +38,8 @@ public class SoulBindSoulStoneAbility implements IGStoneAbility {
     public void activate(Level level, Player player, ItemStack stack) {
         if (!(level instanceof ServerLevel server)) return;
 
-        boolean inGauntlet = IGStoneAbility.isInGauntlet(player, stack);
-        
+        boolean inGauntlet = StoneItem.isInGauntlet(player, stack);
+
         int cd = inGauntlet ? COOLDOWN_TICKS_GAUNTLET : COOLDOWN_TICKS_HAND;
         Item cdItem = inGauntlet && stack.getItem().getClass().getSimpleName().equals("InfinityGauntletItem")
                 ? stack.getItem() : player.getMainHandItem().getItem();

@@ -23,7 +23,8 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.effects.StoneUseDamage;
+import org.jcs.egm.stones.StoneItem;
+import org.jcs.egm.stones.StoneUseDamage;
 
 import java.util.List;
 import java.util.Optional;
@@ -42,7 +43,7 @@ public class MetamorphosisRealityStoneAbility implements IGStoneAbility {
     public void activate(Level level, Player player, ItemStack stack) {
         if (level.isClientSide) return;
 
-        boolean inGauntlet = IGStoneAbility.isInGauntlet(player, stack);
+        boolean inGauntlet = StoneItem.isInGauntlet(player, stack);
 
         int cooldown = inGauntlet ? COOLDOWN_TICKS_GAUNTLET : COOLDOWN_TICKS_HAND;
         ItemStack cooldownStack = (inGauntlet && stack != null && stack.getItem().getClass().getSimpleName().equals("InfinityGauntletItem"))

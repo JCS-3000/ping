@@ -2,6 +2,7 @@ package org.jcs.egm.stones.stone_mind;
 
 import net.minecraft.network.chat.Component;
 import org.jcs.egm.stones.IGStoneAbility;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +34,6 @@ public class MindStoneAbilityRegistry {
     public static IGStoneAbility getSelectedAbility(net.minecraft.world.item.ItemStack stack) {
         int idx = stack.getOrCreateTag().getInt("AbilityIndex");
         if (idx < 0 || idx >= ABILITIES.size()) return ABILITIES.get(0);
-        System.out.println("[DEBUG] getSelectedAbility for Mind: index=" + idx + " stack=" + stack);
         return ABILITIES.get(idx);
     }
 }
