@@ -56,5 +56,14 @@ public class NetworkHandler {
                 (msg, ctx) -> msg.handle(ctx),
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
+
+        INSTANCE.registerMessage(
+                id++,
+                SetAbilityIndexPacket.class,
+                SetAbilityIndexPacket::encode,
+                SetAbilityIndexPacket::decode,
+                (msg, ctx) -> msg.handle(ctx),
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
     }
 }

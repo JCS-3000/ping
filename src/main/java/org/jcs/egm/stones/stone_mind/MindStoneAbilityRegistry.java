@@ -33,6 +33,7 @@ public class MindStoneAbilityRegistry {
     public static IGStoneAbility getSelectedAbility(net.minecraft.world.item.ItemStack stack) {
         int idx = stack.getOrCreateTag().getInt("AbilityIndex");
         if (idx < 0 || idx >= ABILITIES.size()) return ABILITIES.get(0);
+        System.out.println("[DEBUG] getSelectedAbility for Mind: index=" + idx + " stack=" + stack);
         return ABILITIES.get(idx);
     }
 }

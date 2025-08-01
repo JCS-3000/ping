@@ -37,5 +37,10 @@ public class InfinityGauntletScreen extends AbstractContainerScreen<InfinityGaun
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
+
 }
 

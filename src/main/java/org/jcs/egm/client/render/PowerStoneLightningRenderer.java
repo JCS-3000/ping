@@ -12,14 +12,40 @@ import net.minecraft.world.phys.Vec3;
 import org.jcs.egm.entity.PowerStoneLightningEntity;
 import org.joml.Quaternionf;
 
-import java.util.Random;
-
 public class PowerStoneLightningRenderer extends EntityRenderer<PowerStoneLightningEntity> {
     private static final ResourceLocation BEAM_TEXTURE =
             new ResourceLocation("egm:textures/entity/placeholder.png");
 
     private static final int SEGMENTS = 5;
     private static final float SPREAD = 0.4f;
+
+    // 3 box widths (as in original)
+    private static final float[] BOX_WIDTHS = {
+            0.50f,
+            0.45f,
+            0.37f,
+            0.30f,
+            0.23f,
+            0.15f
+    };
+
+    // RGBA colors and alpha for each box (outer to center)
+    private static final int[] BOX_COLORS = {
+            0x4c058a,
+            0x880089, // purple (outermost)
+            0xb7007f, // purple-pink midpoint
+            0xe10071, // pinkish red (middle)
+            0xff335f, // pinkish-white midpoint
+            0xffffff  // white (center)
+    };
+    private static final float[] BOX_ALPHAS = {
+            0.1f,
+            0.1f,   // purple
+            0.1f,
+            0.2f,
+            0.2f,
+            0.75f    // white
+    };
 
     public PowerStoneLightningRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
@@ -35,13 +61,13 @@ public class PowerStoneLightningRenderer extends EntityRenderer<PowerStoneLightn
         float length = (float) start.distanceTo(end);
         if (length < 0.01f) return;
 
-        // Build lightning path with jagged randomization
+        // Build jagged lightning path
         Vec3[] points = new Vec3[SEGMENTS + 1];
         points[0] = start;
         points[SEGMENTS] = end;
 
         long seed = entity.getId() * 31L + entity.tickCount / 2;
-        Random rand = new Random(seed);
+        java.util.Random rand = new java.util.Random(seed);
 
         Vec3 direction = end.subtract(start).normalize();
         Vec3 perp = direction.cross(new Vec3(0, 1, 0));
@@ -63,11 +89,13 @@ public class PowerStoneLightningRenderer extends EntityRenderer<PowerStoneLightn
 
         // Render each segment (jagged lightning style)
         for (int i = 0; i < SEGMENTS; i++) {
-            renderLayeredSegment(points[i], points[i + 1], poseStack, buffer, packedLight);
+            renderNestedBoxes(points[i], points[i + 1], entity, partialTicks, poseStack, buffer, packedLight);
         }
     }
 
-    private void renderLayeredSegment(Vec3 from, Vec3 to, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
+    /** Renders 3 nested, spinning boxes (quaternions) for a single lightning segment */
+    private void renderNestedBoxes(Vec3 from, Vec3 to, PowerStoneLightningEntity entity, float partialTicks,
+                                   PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
         Vec3 diff = to.subtract(from);
         float segLength = (float) diff.length();
         if (segLength < 1e-8) return;
@@ -76,16 +104,18 @@ public class PowerStoneLightningRenderer extends EntityRenderer<PowerStoneLightn
         poseStack.translate(from.x, from.y, from.z);
         poseStack.mulPose(lookAtQuaternion(diff));
 
-        // Outer: Blueish purple (wider, more transparent)
-        renderCuboid(poseStack, buffer, packedLight, segLength, 0.45f, 0.3f, 0x6a34eb); // blue-purple, alpha 0.3
-        // Middle: Red-ish purple (medium, less transparent)
-        renderCuboid(poseStack, buffer, packedLight, segLength, 0.29f, 0.7f, 0xbf249c); // red-purple, alpha 0.7
-        // Core: White (thickest, opaque, drawn last so it's not tinted by others)
-        renderCuboid(poseStack, buffer, packedLight, segLength, 0.17f, 1.0f, 0xffffff); // white, alpha 1.0
+
+
+        // box count
+        for (int i = 0; i < BOX_WIDTHS.length; i++) {
+            renderCuboid(poseStack, buffer, packedLight, segLength, BOX_WIDTHS[i], BOX_ALPHAS[i], BOX_COLORS[i]);
+        }
+
 
         poseStack.popPose();
     }
 
+    /** Draws a cuboid centered at 0,0 with width/height, length=segLength */
     private void renderCuboid(PoseStack poseStack, MultiBufferSource buffer, int packedLight,
                               float length, float width, float alpha, int color) {
         VertexConsumer consumer = buffer.getBuffer(RenderType.entityTranslucent(BEAM_TEXTURE));
@@ -143,7 +173,7 @@ public class PowerStoneLightningRenderer extends EntityRenderer<PowerStoneLightn
                 .endVertex();
     }
 
-    private static Quaternionf lookAtQuaternion(Vec3 direction) {
+    private static org.joml.Quaternionf lookAtQuaternion(Vec3 direction) {
         Vec3 from = new Vec3(0, 0, 1);
         Vec3 to = direction.normalize();
         double dot = from.dot(to);

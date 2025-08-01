@@ -1,12 +1,15 @@
 package org.jcs.egm.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
+import org.jcs.egm.network.SetAbilityIndexPacket;
+import org.jcs.egm.network.NetworkHandler;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -72,10 +75,9 @@ public class StoneAbilityMenuScreen extends Screen {
             // Draw arrow for selected
             if (i == selectedIndex) {
                 RenderSystem.setShaderTexture(0, ARROW_TEX);
-                // Position: 24px left of text center, 4px up to center arrow with text (tweak as needed)
                 graphics.blit(ARROW_TEX,
-                        this.width / 2 - 55, // arrow relative left/right
-                        y - 2,   // arrow relative to text
+                        this.width / 2 - 55, // X position
+                        y - 2,   // Y position
                         0, 0,
                         12, 12,
                         12, 12);
@@ -151,15 +153,26 @@ public class StoneAbilityMenuScreen extends Screen {
     @Override
     public void onClose() {
         saveSelection();
+        System.out.println("[CLIENT] Menu closed; index: " + selectedIndex + " for stack: " + stoneStack);
+        if (Minecraft.getInstance().player != null && Minecraft.getInstance().player.connection != null) {
+            System.out.println("[CLIENT] Sending SetAbilityIndexPacket: " + selectedIndex + ", hand: " + hand);
+            NetworkHandler.INSTANCE.sendToServer(new SetAbilityIndexPacket(selectedIndex, hand));
+        }
         super.onClose();
     }
 
-    /** Save the current selection to the stack (client side) */
     private void saveSelection() {
+        System.out.println("[CLIENT] Saving selection: " + selectedIndex + " for stack: " + stoneStack);
         if (stoneStack != null && stoneStack.hasTag()) {
             stoneStack.getTag().putInt("AbilityIndex", selectedIndex);
         } else if (stoneStack != null) {
             stoneStack.getOrCreateTag().putInt("AbilityIndex", selectedIndex);
         }
     }
+
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
+
 }

@@ -247,7 +247,7 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
         }
 
         // --- Now compute the visible beam: from chest/hand to hit ---
-        Vec3 chest = player.position().add(0, 1.0, 0); // chest center
+        Vec3 chest = player.position().add(0, 1.2, 0); // chest center
         Vec3 renderStart = chest.add(look.scale(0.2)); // adjust for hand if you wish
         Vec3 renderEnd = rayHit;
 

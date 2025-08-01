@@ -37,4 +37,9 @@ public class StoneHolderScreen extends AbstractContainerScreen<StoneHolderMenu> 
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
+
 }

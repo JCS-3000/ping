@@ -53,6 +53,8 @@ public class StoneItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand) {
         ItemStack usedStack = player.getItemInHand(hand);
+        int idx = usedStack.getOrCreateTag().getInt("AbilityIndex");
+        System.out.println("[SERVER] Ability activation for " + usedStack + "; index: " + idx + "; isClient=" + world.isClientSide);
         IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.getKey(), usedStack);
         if (ability != null && ability.canHoldUse()) {
             player.startUsingItem(hand);
