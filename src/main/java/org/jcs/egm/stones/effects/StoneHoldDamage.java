@@ -10,7 +10,7 @@ import net.minecraftforge.fml.common.Mod;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
 import org.jcs.egm.stones.StoneItem;
 
-@Mod.EventBusSubscriber(modid = "egm", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = "egm", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class StoneHoldDamage {
 
     private static int tickCounter = 0;

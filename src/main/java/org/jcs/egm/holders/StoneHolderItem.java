@@ -75,7 +75,6 @@ public class StoneHolderItem extends Item {
         };
     }
 
-    /** Menu provider for opening GUI */
     public MenuProvider getMenuProvider(ItemStack stack) {
         return new SimpleMenuProvider(
                 (id, inv, plyr) -> new StoneHolderMenu(id, inv, stack),
