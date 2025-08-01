@@ -20,11 +20,11 @@ import org.jcs.egm.entity.PowerStoneLightningEntity;
 import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneUseDamage;
+import org.jcs.egm.stones.effects.StoneUseDamage;
 
 import java.util.*;
 
-public class PowerStoneAbility implements IGStoneAbility {
+public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
 
     private final Map<UUID, PowerStoneLightningEntity> activeBeams = new HashMap<>();
     private final Map<UUID, Integer> bedrockHitTicks = new HashMap<>();
@@ -150,7 +150,7 @@ public class PowerStoneAbility implements IGStoneAbility {
             BlockPos blockPos = BlockPos.containing(pos);
             BlockState blockState = level.getBlockState(blockPos);
 
-            if (!blockState.isAir()) {
+            if (!blockState.isAir() && blockState.getBlock() != Blocks.WATER && blockState.getBlock() != Blocks.BUBBLE_COLUMN) {
                 thisHitBlock = blockPos;
                 hitBlock = true;
                 rayHit = pos;

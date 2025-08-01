@@ -121,6 +121,7 @@
   },
   "minecraft:adventure/kill_all_mobs": {
     "criteria": {
+      "minecraft:zombified_piglin": "2025-08-01 01:05:15 -0400",
       "minecraft:wither_skeleton": "2025-07-31 18:04:00 -0400",
       "minecraft:enderman": "2025-07-17 20:43:01 -0400",
       "minecraft:zombie": "2025-07-22 21:18:24 -0400"
@@ -604,6 +605,18 @@
   "minecraft:recipes/misc/gold_nugget_from_blasting": {
     "criteria": {
       "has_golden_sword": "2025-07-31 18:06:18 -0400"
+    },
+    "done": true
+  },
+  "minecraft:recipes/misc/gold_ingot_from_nuggets": {
+    "criteria": {
+      "has_gold_nugget": "2025-08-01 01:05:18 -0400"
+    },
+    "done": true
+  },
+  "minecraft:recipes/brewing/golden_carrot": {
+    "criteria": {
+      "has_gold_nugget": "2025-08-01 01:05:18 -0400"
     },
     "done": true
   },

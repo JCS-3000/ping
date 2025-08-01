@@ -8,6 +8,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.jcs.egm.egm;
 import org.jcs.egm.gauntlet.InfinityGauntletMenu;
+import org.jcs.egm.holders.StoneHolderMenu; // <-- added
 
 public class ModMenuTypes {
     public static final DeferredRegister<MenuType<?>> MENUS =
@@ -18,6 +19,14 @@ public class ModMenuTypes {
                     IForgeMenuType.create((id, inv, buf) -> {
                         ItemStack stack = buf.readItem();
                         return new InfinityGauntletMenu(id, inv, stack);
+                    })
+            );
+
+    public static final RegistryObject<MenuType<StoneHolderMenu>> STONE_HOLDER =
+            MENUS.register("stone_holder", () ->
+                    IForgeMenuType.create((id, inv, buf) -> {
+                        ItemStack stack = buf.readItem();
+                        return new StoneHolderMenu(id, inv, stack);
                     })
             );
 }

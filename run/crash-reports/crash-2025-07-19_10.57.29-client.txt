@@ -5,7 +5,7 @@ Time: 2025-07-19 10:57:29
 Description: Ticking entity
 
 java.lang.ClassCastException: class net.minecraft.client.multiplayer.ClientLevel cannot be cast to class net.minecraft.server.level.ServerLevel (net.minecraft.client.multiplayer.ClientLevel and net.minecraft.server.level.ServerLevel are in module minecraft@1.20.1 of loader 'TRANSFORMER' @4f2d995e)
-	at org.jcs.egm.stones.stone_power.PowerStoneAbility.onUsingTick(PowerStoneAbility.java:103) ~[main/:?] {re:classloading}
+	at org.jcs.egm.stones.stone_power.InfiniteLightningPowerStoneAbility.onUsingTick(PowerStoneAbility.java:103) ~[main/:?] {re:classloading}
 	at org.jcs.egm.gauntlet.InfinityGauntletItem.onUseTick(InfinityGauntletItem.java:113) ~[main/:?] {re:classloading}
 	at net.minecraft.world.item.ItemStack.onUseTick(ItemStack.java:967) ~[forge-1.20.1-47.4.0_mapped_official_1.20.1-recomp.jar:?] {re:classloading,xf:fml:forge:itemstack}
 	at net.minecraft.world.entity.LivingEntity.updateUsingItem(LivingEntity.java:2898) ~[forge-1.20.1-47.4.0_mapped_official_1.20.1-recomp.jar:?] {re:classloading}
@@ -48,9 +48,9 @@ A detailed walkthrough of the error, its code path and all known details is as f
 Thread: Render thread
 Suspected Mod: 
 	End Game Mod (egm), Version: 1.0.0
-		at TRANSFORMER/egm@1.0.0/org.jcs.egm.stones.stone_power.PowerStoneAbility.onUsingTick(PowerStoneAbility.java:103)
+		at TRANSFORMER/egm@1.0.0/org.jcs.egm.stones.stone_power.InfiniteLightningPowerStoneAbility.onUsingTick(PowerStoneAbility.java:103)
 Stacktrace:
-	at org.jcs.egm.stones.stone_power.PowerStoneAbility.onUsingTick(PowerStoneAbility.java:103) ~[%23196!/:?] {re:classloading}
+	at org.jcs.egm.stones.stone_power.InfiniteLightningPowerStoneAbility.onUsingTick(PowerStoneAbility.java:103) ~[%23196!/:?] {re:classloading}
 	at org.jcs.egm.gauntlet.InfinityGauntletItem.onUseTick(InfinityGauntletItem.java:113) ~[%23196!/:?] {re:classloading}
 	at net.minecraft.world.item.ItemStack.onUseTick(ItemStack.java:967) ~[forge-1.20.1-47.4.0_mapped_official_1.20.1-recomp.jar%23191!/:?] {re:classloading,xf:fml:forge:itemstack}
 	at net.minecraft.world.entity.LivingEntity.updateUsingItem(LivingEntity.java:2898) ~[forge-1.20.1-47.4.0_mapped_official_1.20.1-recomp.jar%23191!/:?] {re:classloading}

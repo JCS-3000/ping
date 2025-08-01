@@ -33,6 +33,12 @@ public class ClientSetup {
                     ModMenuTypes.INFINITY_GAUNTLET.get(),
                     InfinityGauntletScreen::new
             );
+            MenuScreens.register(
+                    ModMenuTypes.STONE_HOLDER.get(),
+                    StoneHolderScreen::new
+            );
+
+
 
 
             // Register custom item property for model overrides!

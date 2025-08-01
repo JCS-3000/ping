@@ -6,6 +6,12 @@
   "item.egm.soul_stone": "Soul Stone",
   "item.egm.reality_stone": "Reality Stone",
   "item.egm.infinity_gauntlet": "Infinity Gauntlet",
+  "item.egm.mind_stone_holder": "Lokian Scepter",
+  "item.egm.power_stone_holder": "Orb of Morag",
+  "item.egm.space_stone_holder": "Tesseract",
+  "item.egm.reality_stone_holder": "Aether",
+  "item.egm.soul_stone_holder": "Red Skull",
+  "item.egm.time_stone_holder": "Eye of Agamotto",
   "item.egm.ingot_uru": "Uru Ingot",
   "death.attack.infinity_stone": "%1$s decided to emulate Tony Stark",
 

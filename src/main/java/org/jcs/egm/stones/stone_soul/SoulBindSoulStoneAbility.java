@@ -21,13 +21,13 @@ import net.minecraft.world.phys.AABB;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneUseDamage;
+import org.jcs.egm.stones.effects.StoneUseDamage;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class SoulStoneAbility implements IGStoneAbility {
+public class SoulBindSoulStoneAbility implements IGStoneAbility {
     private static final int RADIUS  = 10; // 21×21 area
     private static final int Y_RANGE = 3;  // 3 up/down
     private static final int COOLDOWN_TICKS_HAND = 120; // 6 seconds

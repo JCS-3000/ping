@@ -1,0 +1,57 @@
+package org.jcs.egm.stones.stone_mind;
+
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import org.jcs.egm.stones.IGStoneAbility;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+
+public class EnrageMindStoneAbility implements IGStoneAbility {
+    @Override
+    public void activate(Level level, Player player, ItemStack stack) {
+        if (!(player instanceof ServerPlayer serverPlayer)) return;
+        List<Mob> mobs = level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(10));
+        if (mobs.isEmpty()) {
+            serverPlayer.displayClientMessage(
+                    net.minecraft.network.chat.Component.literal("No mobs nearby to enrage."), true);
+            return;
+        }
+        for (Mob mob : mobs) {
+            // Effects for 5 minutes
+            int duration = 20 * 60 * 5;
+            mob.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, duration, 1));
+            mob.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, duration, 1));
+            mob.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, duration, 1));
+            mob.addEffect(new MobEffectInstance(MobEffects.REGENERATION, duration, 1));
+
+            // Find nearest player (not caster) in 50 blocks
+            Optional<Player> nearest = level.getEntitiesOfClass(Player.class, mob.getBoundingBox().inflate(50))
+                    .stream()
+                    .filter(p -> !p.getUUID().equals(player.getUUID()))
+                    .min(Comparator.comparingDouble(p -> p.distanceTo(mob)));
+            if (nearest.isPresent()) {
+                mob.setTarget(nearest.get());
+            } else {
+                // Attack nearest mob if no player
+                Optional<LivingEntity> other = level.getEntitiesOfClass(LivingEntity.class, mob.getBoundingBox().inflate(16))
+                        .stream()
+                        .filter(e -> e != mob && !(e instanceof Player))
+                        .min(Comparator.comparingDouble(e -> e.distanceTo(mob)));
+                other.ifPresent(mob::setTarget);
+            }
+        }
+        serverPlayer.displayClientMessage(
+                net.minecraft.network.chat.Component.literal("Nearby mobs are enraged!"), true);
+    }
+    @Override
+    public boolean canHoldUse() { return false; }
+}

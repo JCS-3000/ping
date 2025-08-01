@@ -1,27 +1,26 @@
 package org.jcs.egm.stones;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
+import org.jcs.egm.client.StoneAbilityMenuScreen;
+
+import java.util.List;
 
 public class StoneItem extends Item {
     private final String key;
     private final int nameColor;
 
-    /**
-     * @param key    Stone identifier (e.g., "mind", "power")
-     * @param color  RGB hex color for the item name (e.g., 0xffdd00)
-     * @param properties Item properties
-     */
     public StoneItem(String key, int color, Properties properties) {
         super(properties.stacksTo(1));
         this.key = key;
@@ -32,9 +31,13 @@ public class StoneItem extends Item {
         return this.key;
     }
 
-    // --- FIX: Add a public getter for the color, for overlays and rendering ---
     public int getColor() {
         return this.nameColor;
+    }
+
+    public boolean canHoldUse(ItemStack stack) {
+        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.getKey(), stack);
+        return ability != null && ability.canHoldUse();
     }
 
     @Override
@@ -44,60 +47,41 @@ public class StoneItem extends Item {
     }
 
     @Override public UseAnim getUseAnimation(ItemStack stack)   { return UseAnim.BOW; }
+
     @Override public int getUseDuration(ItemStack stack)         { return 72000; }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
-        IGStoneAbility ability = StoneAbilities.REGISTRY.get(key);
-
-        if (ability == null) {
-            if (!level.isClientSide) {
-                player.sendSystemMessage(Component.literal("No ability for " + key));
-            }
-            return InteractionResultHolder.fail(stack);
-        }
-
-        if (ability.canHoldUse()) {
-            player.startUsingItem(hand);
-        }
-        ability.activate(level, player, stack);
-
-        return InteractionResultHolder.success(stack);
-    }
-
-
-    @Override
-    public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int count) {
-        if (entity instanceof Player player && !level.isClientSide) {
-            IGStoneAbility ability = StoneAbilities.REGISTRY.get(key);
-            if (ability != null && ability.canHoldUse()) {
-                ability.onUsingTick(level, player, stack, count);
-            }
-        }
-    }
-
-    // --- Add this override to trigger cleanup on use stop ---
-    @Override
-    public void releaseUsing(ItemStack stack, Level level, LivingEntity entity, int timeLeft) {
-        if (entity instanceof Player player && !level.isClientSide) {
-            IGStoneAbility ability = StoneAbilities.REGISTRY.get(key);
-            if (ability != null && ability.canHoldUse()) {
-                ability.releaseUsing(level, player, stack, timeLeft);
-            }
-        }
-    }
-
-
-    public boolean canHoldUse() {
-        IGStoneAbility ability = StoneAbilities.REGISTRY.get(key);
-        return ability != null && ability.canHoldUse();
-    }
-
-    public void onUsingTick(Level level, Player player, ItemStack stack, int count) {
-        IGStoneAbility ability = StoneAbilities.REGISTRY.get(key);
+    public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand) {
+        ItemStack usedStack = player.getItemInHand(hand);
+        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.getKey(), usedStack);
         if (ability != null && ability.canHoldUse()) {
-            ability.onUsingTick(level, player, stack, count);
+            player.startUsingItem(hand);
+            return InteractionResultHolder.consume(usedStack);
+        } else if (ability != null && !world.isClientSide) {
+            ability.activate(world, player, usedStack);
+            return InteractionResultHolder.success(usedStack);
         }
+        return InteractionResultHolder.pass(usedStack);
+    }
+
+    // Open ability selection menu client-side when left-clicking an entity
+    @Override
+    public boolean onLeftClickEntity(ItemStack stack, Player player, Entity entity) {
+        if (player.level().isClientSide) {
+            openStoneAbilityMenu(stack, InteractionHand.MAIN_HAND, this.getKey());
+        }
+        return true;
+    }
+
+    /** Helper to open the StoneAbilityMenuScreen client-side */
+    public static void openStoneAbilityMenu(ItemStack stack, InteractionHand hand, String stoneKey) {
+        if (Minecraft.getInstance().player == null) return;
+
+        List<Component> abilityNames = StoneAbilityRegistries.getAbilityNames(stoneKey);
+
+        int selectedIndex = stack.getOrCreateTag().getInt("AbilityIndex");
+        Minecraft.getInstance().setScreen(
+                new StoneAbilityMenuScreen(stack, hand, abilityNames, selectedIndex)
+        );
     }
 }

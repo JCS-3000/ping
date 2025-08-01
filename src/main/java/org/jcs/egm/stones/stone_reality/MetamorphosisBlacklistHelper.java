@@ -6,7 +6,7 @@ import org.jcs.egm.config.ModCommonConfig;
 import java.util.HashSet;
 import java.util.Set;
 
-public class RealityStoneBlacklistHelper {
+public class MetamorphosisBlacklistHelper {
     private static final Set<String> HARDCODED_BLOCK_IDS = Set.of(
             "minecraft:acacia_button",
             "minecraft:acacia_door",

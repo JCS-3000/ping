@@ -23,13 +23,13 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneUseDamage;
+import org.jcs.egm.stones.effects.StoneUseDamage;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class RealityStoneAbility implements IGStoneAbility {
+public class MetamorphosisRealityStoneAbility implements IGStoneAbility {
     private static final int COOLDOWN_TICKS_HAND = 120; // 6 seconds
     private static final int COOLDOWN_TICKS_GAUNTLET = 10; // .5 seconds
     private static final double MAX_RANGE = 50.0D;
@@ -90,8 +90,8 @@ public class RealityStoneAbility implements IGStoneAbility {
             if (hitEntity instanceof LivingEntity living && !(hitEntity instanceof Player)) {
                 ResourceLocation mobId = ForgeRegistries.ENTITY_TYPES.getKey(living.getType());
                 System.out.println("[RealityStone] Mob entity type: " + mobId);
-                boolean hard = RealityStoneBlacklistHelper.isHardcodedEntityBlacklisted(mobId);
-                boolean config = RealityStoneBlacklistHelper.isConfigEntityBlacklisted(mobId);
+                boolean hard = MetamorphosisBlacklistHelper.isHardcodedEntityBlacklisted(mobId);
+                boolean config = MetamorphosisBlacklistHelper.isConfigEntityBlacklisted(mobId);
                 System.out.println("[RealityStone] Blacklist? hard=" + hard + ", config=" + config);
                 if (!hard && !config) {
                     System.out.println("[RealityStone] Attempting mob transformation!");
@@ -107,8 +107,8 @@ public class RealityStoneAbility implements IGStoneAbility {
             BlockPos blockPos = blockResult.getBlockPos();
             BlockState oldState = level.getBlockState(blockPos);
             ResourceLocation blockId = ForgeRegistries.BLOCKS.getKey(oldState.getBlock());
-            boolean hard = RealityStoneBlacklistHelper.isHardcodedBlacklisted(blockId);
-            boolean config = RealityStoneBlacklistHelper.isConfigBlacklisted(blockId);
+            boolean hard = MetamorphosisBlacklistHelper.isHardcodedBlacklisted(blockId);
+            boolean config = MetamorphosisBlacklistHelper.isConfigBlacklisted(blockId);
             System.out.println("[RealityStone] Block: " + blockId + " hard=" + hard + " config=" + config);
             if (!oldState.isAir() && !hard && !config && tryReplaceBlock((ServerLevel) level, blockPos, oldState, player)) {
                 transformed = true;

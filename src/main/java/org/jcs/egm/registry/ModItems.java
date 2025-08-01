@@ -7,6 +7,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.jcs.egm.egm;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
+import org.jcs.egm.holders.StoneHolderItem;
 import org.jcs.egm.stones.StoneItem;
 
 
@@ -53,6 +54,22 @@ public class ModItems {
                     Item.Properties()
                     .stacksTo(1)
                     .rarity(Rarity.EPIC)));
+
+    // STONE HOLDERS
+
+    // --- Stone Holders ---
+    public static final RegistryObject<Item> MIND_STONE_HOLDER =
+            ITEMS.register("lokian_scepter", () -> new StoneHolderItem("mind", new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> POWER_STONE_HOLDER =
+            ITEMS.register("orb_of_morag", () -> new StoneHolderItem("power", new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> SPACE_STONE_HOLDER =
+            ITEMS.register("tesseract", () -> new StoneHolderItem("space", new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> REALITY_STONE_HOLDER =
+            ITEMS.register("aether", () -> new StoneHolderItem("reality", new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> SOUL_STONE_HOLDER =
+            ITEMS.register("red_skull", () -> new StoneHolderItem("soul", new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> TIME_STONE_HOLDER =
+            ITEMS.register("eye_of_agamotto", () -> new StoneHolderItem("time", new Item.Properties().stacksTo(1)));
 
     // URU
 

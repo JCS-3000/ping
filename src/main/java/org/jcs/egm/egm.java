@@ -30,6 +30,5 @@ public class egm {
 
     private void setup(final FMLCommonSetupEvent event) {
         NetworkHandler.register();
-        org.jcs.egm.network.MindStonePackets.register();
     }
 }

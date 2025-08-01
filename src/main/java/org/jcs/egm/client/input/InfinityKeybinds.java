@@ -9,22 +9,22 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(bus = net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.MOD)
 public class InfinityKeybinds {
-    public static final KeyMapping OPEN_GAUNTLET_MENU = new KeyMapping(
-            "key.egm.open_gauntlet_menu",
+    public static final KeyMapping OPEN_STONE_MENU = new KeyMapping(
+            "key.egm.open_stone_menu",
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_H,
             "key.categories.inventory"
     );
-    public static final KeyMapping OPEN_MIND_WHEEL = new KeyMapping(
-            "key.egm.open_mind_wheel",
+
+    public static final KeyMapping OPEN_ABILITY_MENU = new KeyMapping(
+            "key.egm.open_ability_menu",
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_M,
+            GLFW.GLFW_KEY_G,
             "key.categories.inventory"
     );
 
     @SubscribeEvent
     public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
-        event.register(OPEN_GAUNTLET_MENU);
-        event.register(OPEN_MIND_WHEEL);
+        event.register(OPEN_STONE_MENU);
     }
 }

@@ -2,8 +2,6 @@ package org.jcs.egm.gauntlet;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -17,10 +15,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.items.ItemStackHandler;
-import net.minecraftforge.network.NetworkHooks;
 import org.jcs.egm.registry.ModItems;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilities;
+import org.jcs.egm.stones.StoneAbilityRegistries;
 import org.jcs.egm.stones.StoneItem;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,38 +45,24 @@ public class InfinityGauntletItem extends Item {
     @Override
     public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level level, Player player, @NotNull InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-
-        // Load gauntlet inventory from NBT
+        int idx = getSelectedStone(stack);
+        String stoneKey = getSelectedStoneName(stack);
         ItemStackHandler handler = new ItemStackHandler(6);
         if (stack.hasTag() && stack.getTag().contains("Stones")) {
             handler.deserializeNBT(stack.getTag().getCompound("Stones"));
         }
-
-        // Get selected stone index and clamp it
-        int idx = getSelectedStone(stack);
-        int maxSlots = handler.getSlots();
-        if (idx < 0 || idx >= maxSlots) {
-            idx = 0;
-            setSelectedStone(stack, 0);
-        }
-
         ItemStack stoneStack = handler.getStackInSlot(idx);
-
         if (!stoneStack.isEmpty() && stoneStack.getItem() instanceof StoneItem stoneItem) {
-            IGStoneAbility ability = StoneAbilities.REGISTRY.get(stoneItem.getKey());
-            if (ability != null) {
-                if (stoneItem.canHoldUse()) {
-                    player.startUsingItem(hand);
-                    return InteractionResultHolder.consume(stack);
-                } else if (!level.isClientSide) {
-                    ability.activate(level, player, stoneStack);
-                }
+            IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneKey, stoneStack);
+            if (ability != null && ability.canHoldUse()) {
+                player.startUsingItem(hand);
+                return InteractionResultHolder.consume(stack);
+            } else if (ability != null && !level.isClientSide) {
+                ability.activate(level, player, stoneStack);
+                return InteractionResultHolder.success(stack);
             }
-        } else if (!level.isClientSide) {
-            player.displayClientMessage(Component.literal("No Infinity Stone in the selected slot."), true);
         }
-
-        return InteractionResultHolder.success(stack);
+        return InteractionResultHolder.pass(stack);
     }
 
     @Override
@@ -96,15 +79,14 @@ public class InfinityGauntletItem extends Item {
 
             ItemStack stoneStack = handler.getStackInSlot(idx);
             if (!stoneStack.isEmpty() && stoneStack.getItem() instanceof StoneItem stoneItem) {
-                IGStoneAbility ability = org.jcs.egm.stones.StoneAbilities.REGISTRY.get(stoneItem.getKey());
-                if (ability != null && stoneItem.canHoldUse()) {
+                IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneItem.getKey(), stoneStack);
+                if (ability != null && stoneItem.canHoldUse(stoneStack)) {
                     ability.onUsingTick(level, player, stoneStack, count);
                 }
             }
         }
     }
 
-    // ---------- method to propagate releaseUsing ----------
     @Override
     public void releaseUsing(ItemStack stack, Level level, LivingEntity entity, int timeLeft) {
         if (entity instanceof Player player) {
@@ -119,9 +101,8 @@ public class InfinityGauntletItem extends Item {
 
             ItemStack stoneStack = handler.getStackInSlot(idx);
             if (!stoneStack.isEmpty() && stoneStack.getItem() instanceof StoneItem stoneItem) {
-                IGStoneAbility ability = org.jcs.egm.stones.StoneAbilities.REGISTRY.get(stoneItem.getKey());
-                if (ability != null && stoneItem.canHoldUse()) {
-                    // This is the key call: forwards releaseUsing!
+                IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneItem.getKey(), stoneStack);
+                if (ability != null && stoneItem.canHoldUse(stoneStack)) {
                     ability.releaseUsing(level, player, stoneStack, timeLeft);
                 }
             }
@@ -144,7 +125,7 @@ public class InfinityGauntletItem extends Item {
 
     @Override
     public UseAnim getUseAnimation(ItemStack stack) {
-        return UseAnim.BLOCK; // BLOCK for shields, BOW for bow-pulling
+        return UseAnim.BOW;
     }
 
     public static int getSelectedStone(ItemStack stack) {
@@ -199,11 +180,9 @@ public class InfinityGauntletItem extends Item {
         return bitmask;
     }
 
-    // --- ADD THIS METHOD FOR MODEL OVERRIDE ---
     /** Call this every time the Stones handler is changed! */
     public static void updateStonesBitmaskNBT(ItemStack stack) {
         int bitmask = getStonesBitmask(stack);
         stack.getOrCreateTag().putInt("StoneBitmask", bitmask);
-
     }
 }

@@ -1,4 +1,4 @@
-package org.jcs.egm.stones;
+package org.jcs.egm.stones.effects;
 
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -8,6 +8,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
+import org.jcs.egm.stones.StoneItem;
 
 @Mod.EventBusSubscriber(modid = "egm", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class StoneHoldDamage {
