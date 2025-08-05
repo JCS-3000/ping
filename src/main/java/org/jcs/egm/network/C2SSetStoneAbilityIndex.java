@@ -2,15 +2,13 @@ package org.jcs.egm.network;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.NetworkEvent;
 import org.jcs.egm.holders.StoneHolderItem;
+import org.jcs.egm.gauntlet.InfinityGauntletItem;
 
 import java.util.function.Supplier;
 
-/**
- * Packet: Sent from client to server when a player selects an ability for a stone.
- * Carries: hand (main/off), selected index.
- */
 public class C2SSetStoneAbilityIndex {
     private final int hand; // 0 = main, 1 = off
     private final int index; // selected ability index
@@ -35,14 +33,33 @@ public class C2SSetStoneAbilityIndex {
             ServerPlayer player = ctx.get().getSender();
             if (player == null) return;
             var stack = player.getItemInHand(hand == 0 ? net.minecraft.world.InteractionHand.MAIN_HAND : net.minecraft.world.InteractionHand.OFF_HAND);
-            if (stack.getItem() instanceof org.jcs.egm.stones.StoneItem) {
-                stack.getOrCreateTag().putInt("AbilityIndex", index);
-            } else if (stack.getItem() instanceof StoneHolderItem) {
-                stack.getOrCreateTag().putInt("AbilityIndex", index);
-            } else if (stack.getItem() instanceof org.jcs.egm.gauntlet.InfinityGauntletItem) {
+
+            // Stone Holder
+            if (stack.getItem() instanceof StoneHolderItem) {
+                var inside = StoneHolderItem.getStone(stack);
+                if (!inside.isEmpty()) {
+                    inside.getOrCreateTag().putInt("AbilityIndex", index);
+                    StoneHolderItem.setStone(stack, inside);
+                }
+            }
+            // Gauntlet
+            else if (stack.getItem() instanceof InfinityGauntletItem) {
+                int stoneIdx = InfinityGauntletItem.getSelectedStone(stack);
+                ItemStackHandler handler = new ItemStackHandler(6);
+                if (stack.hasTag() && stack.getTag().contains("Stones")) {
+                    handler.deserializeNBT(stack.getTag().getCompound("Stones"));
+                }
+                var stoneStack = handler.getStackInSlot(stoneIdx);
+                if (!stoneStack.isEmpty()) {
+                    stoneStack.getOrCreateTag().putInt("AbilityIndex", index);
+                    handler.setStackInSlot(stoneIdx, stoneStack);
+                    stack.getTag().put("Stones", handler.serializeNBT());
+                }
+            }
+            // Raw stone or fallback
+            else {
                 stack.getOrCreateTag().putInt("AbilityIndex", index);
             }
-            // Add additional logic here if you need per-context ability storage (e.g., for gauntlet per-stone)
         });
         ctx.get().setPacketHandled(true);
     }

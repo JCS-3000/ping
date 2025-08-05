@@ -8,9 +8,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
+import org.jcs.egm.holders.StoneHolderItem;
+import org.jcs.egm.gauntlet.InfinityGauntletItem;
 import org.jcs.egm.network.NetworkHandler;
 import org.jcs.egm.network.SetAbilityIndexPacket;
 import org.lwjgl.glfw.GLFW;
+import net.minecraftforge.items.ItemStackHandler;
 
 import java.util.List;
 
@@ -163,10 +166,31 @@ public class StoneAbilityMenuScreen extends Screen {
 
     private void saveSelection() {
         System.out.println("[CLIENT] Saving selection: " + selectedIndex + " for stack: " + stoneStack);
-        if (stoneStack != null && stoneStack.hasTag()) {
-            stoneStack.getTag().putInt("AbilityIndex", selectedIndex);
-        } else if (stoneStack != null) {
-            stoneStack.getOrCreateTag().putInt("AbilityIndex", selectedIndex);
+
+        // Always try to set the AbilityIndex on the *stone* inside the holder or gauntlet
+        if (stoneStack.getItem() instanceof StoneHolderItem) {
+            ItemStack inside = StoneHolderItem.getStone(stoneStack);
+            if (!inside.isEmpty()) {
+                inside.getOrCreateTag().putInt("AbilityIndex", selectedIndex);
+                StoneHolderItem.setStone(stoneStack, inside);
+            }
+        } else if (stoneStack.getItem() instanceof InfinityGauntletItem) {
+            int idx = InfinityGauntletItem.getSelectedStone(stoneStack);
+            ItemStackHandler handler = new ItemStackHandler(6);
+            if (stoneStack.hasTag() && stoneStack.getTag().contains("Stones")) {
+                handler.deserializeNBT(stoneStack.getTag().getCompound("Stones"));
+            }
+            ItemStack innerStone = handler.getStackInSlot(idx);
+            if (!innerStone.isEmpty()) {
+                innerStone.getOrCreateTag().putInt("AbilityIndex", selectedIndex);
+                handler.setStackInSlot(idx, innerStone);
+                stoneStack.getTag().put("Stones", handler.serializeNBT());
+            }
+        } else {
+            // Raw stone or other
+            if (stoneStack != null) {
+                stoneStack.getOrCreateTag().putInt("AbilityIndex", selectedIndex);
+            }
         }
     }
 
@@ -174,5 +198,4 @@ public class StoneAbilityMenuScreen extends Screen {
     public boolean isPauseScreen() {
         return false;
     }
-
 }

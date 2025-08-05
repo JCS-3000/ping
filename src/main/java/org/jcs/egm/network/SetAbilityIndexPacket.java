@@ -4,8 +4,10 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.NetworkEvent;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
+import org.jcs.egm.holders.StoneHolderItem;
 
 import java.util.function.Supplier;
 
@@ -38,12 +40,18 @@ public class SetAbilityIndexPacket {
             if (player == null) return;
             ItemStack stack = player.getItemInHand(hand);
             if (!stack.isEmpty()) {
-                stack.getOrCreateTag().putInt("AbilityIndex", index);
-
-                // Also update the NBT inside the gauntlet for the selected stone slot if this is a gauntlet
-                if (stack.getItem() instanceof InfinityGauntletItem) {
+                // For Stone Holder
+                if (stack.getItem() instanceof StoneHolderItem) {
+                    ItemStack inside = StoneHolderItem.getStone(stack);
+                    if (!inside.isEmpty()) {
+                        inside.getOrCreateTag().putInt("AbilityIndex", index);
+                        StoneHolderItem.setStone(stack, inside);
+                    }
+                }
+                // For Gauntlet
+                else if (stack.getItem() instanceof InfinityGauntletItem) {
                     int stoneIdx = InfinityGauntletItem.getSelectedStone(stack);
-                    net.minecraftforge.items.ItemStackHandler handler = new net.minecraftforge.items.ItemStackHandler(6);
+                    ItemStackHandler handler = new ItemStackHandler(6);
                     if (stack.hasTag() && stack.getTag().contains("Stones")) {
                         handler.deserializeNBT(stack.getTag().getCompound("Stones"));
                     }
@@ -54,6 +62,10 @@ public class SetAbilityIndexPacket {
                         // Save handler back to gauntlet
                         stack.getTag().put("Stones", handler.serializeNBT());
                     }
+                }
+                // For raw stone or fallback
+                else {
+                    stack.getOrCreateTag().putInt("AbilityIndex", index);
                 }
             }
         });

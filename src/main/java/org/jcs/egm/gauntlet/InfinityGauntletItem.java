@@ -58,6 +58,9 @@ public class InfinityGauntletItem extends Item {
                 return InteractionResultHolder.consume(stack);
             } else if (ability != null && !level.isClientSide) {
                 ability.activate(level, player, stoneStack);
+                // Make sure the stone NBT is put back (for cooldowns, etc.)
+                handler.setStackInSlot(idx, stoneStack);
+                stack.getTag().put("Stones", handler.serializeNBT());
                 return InteractionResultHolder.success(stack);
             }
         }
@@ -82,6 +85,8 @@ public class InfinityGauntletItem extends Item {
                 IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneKey, stoneStack);
                 if (ability != null && ability.canHoldUse()) {
                     ability.onUsingTick(level, player, stoneStack, count);
+                    handler.setStackInSlot(idx, stoneStack);
+                    stack.getTag().put("Stones", handler.serializeNBT());
                 }
             }
         }
@@ -105,6 +110,8 @@ public class InfinityGauntletItem extends Item {
                 IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneKey, stoneStack);
                 if (ability != null && ability.canHoldUse()) {
                     ability.releaseUsing(level, player, stoneStack, timeLeft);
+                    handler.setStackInSlot(idx, stoneStack);
+                    stack.getTag().put("Stones", handler.serializeNBT());
                 }
             }
         }
