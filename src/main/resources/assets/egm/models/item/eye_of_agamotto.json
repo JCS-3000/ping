@@ -1,0 +1,7 @@
+{
+  "parent": "item/handheld",
+  "overrides": [
+    { "predicate": { "egm:stone_bitmask": 0 }, "model": "egm:item/holders/eye_of_agamotto_necklace_no_stone" },
+    { "predicate": { "egm:stone_bitmask": 1 }, "model": "egm:item/holders/eye_of_agamotto_necklace_stone" }
+  ]
+}

@@ -14,7 +14,6 @@ public class RealityStoneItem extends StoneItem {
     @Override
     public int getColor() { return 0xD10018; }
 
-
     public RealityStoneItem(Properties properties) {
         super(properties);
     }
@@ -33,15 +32,5 @@ public class RealityStoneItem extends StoneItem {
             return InteractionResultHolder.success(stack);
         }
         return InteractionResultHolder.pass(stack);
-    }
-
-    @Override
-    public void onUseTick(Level world, Player player, ItemStack stack, int count) {
-        // No hold-use ability for the reality stone at present
-    }
-
-    @Override
-    public void releaseUsing(ItemStack stack, Level world, Player player, int timeLeft) {
-        // No hold-use ability for the reality stone at present
     }
 }

@@ -34,14 +34,4 @@ public class TimeStoneItem extends StoneItem {
         }
         return InteractionResultHolder.pass(stack);
     }
-
-    @Override
-    public void onUseTick(Level world, Player player, ItemStack stack, int count) {
-        // No hold-use ability for the time stone at present
-    }
-
-    @Override
-    public void releaseUsing(ItemStack stack, Level world, Player player, int timeLeft) {
-        // No hold-use ability for the time stone at present
-    }
 }

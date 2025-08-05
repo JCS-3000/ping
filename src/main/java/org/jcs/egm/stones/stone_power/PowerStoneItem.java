@@ -24,7 +24,7 @@ public class PowerStoneItem extends StoneItem {
         if (ability == null) {
             return InteractionResultHolder.pass(stack);
         }
-        // No state gating: works raw, in holder, or in gauntlet!
+        // All states allowed: RAW, HOLDER, GAUNTLET
         if (ability.canHoldUse()) {
             player.startUsingItem(hand);
             return InteractionResultHolder.consume(stack);
@@ -33,21 +33,5 @@ public class PowerStoneItem extends StoneItem {
             return InteractionResultHolder.success(stack);
         }
         return InteractionResultHolder.pass(stack);
-    }
-
-    @Override
-    public void onUseTick(Level world, Player player, ItemStack stack, int count) {
-        IGStoneAbility ability = PowerStoneAbilityRegistry.getSelectedAbility(stack);
-        if (ability != null && ability.canHoldUse()) {
-            ability.onUsingTick(world, player, stack, count);
-        }
-    }
-
-    @Override
-    public void releaseUsing(ItemStack stack, Level world, Player player, int timeLeft) {
-        IGStoneAbility ability = PowerStoneAbilityRegistry.getSelectedAbility(stack);
-        if (ability != null && ability.canHoldUse()) {
-            ability.releaseUsing(world, player, stack, timeLeft);
-        }
     }
 }

@@ -9,6 +9,7 @@ import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import org.jcs.egm.egm;
 import org.jcs.egm.client.particle.PowerStoneEffectOne;
 import org.jcs.egm.client.particle.RealityStoneEffectOne;
 import org.jcs.egm.client.particle.SoulStoneEffectOne;
@@ -19,7 +20,7 @@ import org.jcs.egm.registry.ModItems;
 import org.jcs.egm.registry.ModMenuTypes;
 import org.jcs.egm.registry.ModParticles;
 
-@Mod.EventBusSubscriber(modid = "egm", bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = egm.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ClientSetup {
 
     @SubscribeEvent
@@ -38,13 +39,70 @@ public class ClientSetup {
                     StoneHolderScreen::new
             );
 
-
-
-
-            // Register custom item property for model overrides!
+            // Infinity Gauntlet and Holder: stone_bitmask predicate (uses StoneBitmask NBT)
             ItemProperties.register(
                     ModItems.INFINITY_GAUNTLET.get(),
-                    new ResourceLocation("stone_bitmask"),
+                    new ResourceLocation(egm.MODID, "stone_bitmask"),
+                    (stack, world, entity, seed) -> {
+                        if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
+                            return stack.getTag().getInt("StoneBitmask");
+                        }
+                        return 0F;
+                    }
+            );
+            ItemProperties.register(
+                    ModItems.MIND_STONE_HOLDER.get(),
+                    new ResourceLocation(egm.MODID, "stone_bitmask"),
+                    (stack, world, entity, seed) -> {
+                        if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
+                            return stack.getTag().getInt("StoneBitmask");
+                        }
+                        return 0F;
+                    }
+            );
+            ItemProperties.register(
+                    ModItems.POWER_STONE_HOLDER.get(),
+                    new ResourceLocation(egm.MODID, "stone_bitmask"),
+                    (stack, world, entity, seed) -> {
+                        if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
+                            return stack.getTag().getInt("StoneBitmask");
+                        }
+                        return 0F;
+                    }
+            );
+            ItemProperties.register(
+                    ModItems.SPACE_STONE_HOLDER.get(),
+                    new ResourceLocation(egm.MODID, "stone_bitmask"),
+                    (stack, world, entity, seed) -> {
+                        if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
+                            return stack.getTag().getInt("StoneBitmask");
+                        }
+                        return 0F;
+                    }
+            );
+            ItemProperties.register(
+                    ModItems.REALITY_STONE_HOLDER.get(),
+                    new ResourceLocation(egm.MODID, "stone_bitmask"),
+                    (stack, world, entity, seed) -> {
+                        if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
+                            return stack.getTag().getInt("StoneBitmask");
+                        }
+                        return 0F;
+                    }
+            );
+            ItemProperties.register(
+                    ModItems.SOUL_STONE_HOLDER.get(),
+                    new ResourceLocation(egm.MODID, "stone_bitmask"),
+                    (stack, world, entity, seed) -> {
+                        if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
+                            return stack.getTag().getInt("StoneBitmask");
+                        }
+                        return 0F;
+                    }
+            );
+            ItemProperties.register(
+                    ModItems.TIME_STONE_HOLDER.get(),
+                    new ResourceLocation(egm.MODID, "stone_bitmask"),
                     (stack, world, entity, seed) -> {
                         if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
                             return stack.getTag().getInt("StoneBitmask");
@@ -55,34 +113,31 @@ public class ClientSetup {
         });
     }
 
-
-    // CUSTOM PARTICLE REGISTRATION //
-
     @SubscribeEvent
     public static void registerParticles(RegisterParticleProvidersEvent event) {
-
-        // REALITY //
+        // Reality
         event.registerSpriteSet(
                 ModParticles.REALITY_STONE_EFFECT_ONE.get(),
-                RealityStoneEffectOne.Provider::new);
-
-        // SPACE //
+                RealityStoneEffectOne.Provider::new
+        );
+        // Power
         event.registerSpriteSet(
                 ModParticles.POWER_STONE_EFFECT_ONE.get(),
-                PowerStoneEffectOne.Provider::new);
-
+                PowerStoneEffectOne.Provider::new
+        );
         event.registerSpriteSet(
                 ModParticles.POWER_STONE_EFFECT_TWO.get(),
-                PowerStoneEffectOne.Provider::new);
-
-        // TIME //
+                PowerStoneEffectOne.Provider::new
+        );
+        // Time
         event.registerSpriteSet(
                 ModParticles.TIME_STONE_EFFECT_ONE.get(),
-                TimeStoneEffectOne.Provider::new);
-
-        // SOUL //
+                TimeStoneEffectOne.Provider::new
+        );
+        // Soul
         event.registerSpriteSet(
                 ModParticles.SOUL_STONE_EFFECT_ONE.get(),
-                SoulStoneEffectOne.Provider::new);
+                SoulStoneEffectOne.Provider::new
+        );
     }
 }

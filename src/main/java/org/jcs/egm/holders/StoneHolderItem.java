@@ -1,31 +1,24 @@
 package org.jcs.egm.holders;
 
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.UseAnim;
+import net.minecraft.world.level.Level;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
-import net.minecraft.world.MenuProvider;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.SimpleMenuProvider;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
-import org.jcs.egm.holders.StoneHolderMenu;
-import org.jcs.egm.registry.ModItems;
 import org.jcs.egm.stones.IGStoneAbility;
 import org.jcs.egm.stones.StoneAbilityRegistries;
-
-// Updated: imports for new stone item classes
-import org.jcs.egm.stones.stone_mind.MindStoneItem;
-import org.jcs.egm.stones.stone_power.PowerStoneItem;
-import org.jcs.egm.stones.stone_space.SpaceStoneItem;
-import org.jcs.egm.stones.stone_reality.RealityStoneItem;
-import org.jcs.egm.stones.stone_time.TimeStoneItem;
-import org.jcs.egm.stones.stone_soul.SoulStoneItem;
 
 public class StoneHolderItem extends Item {
     private final String stoneType;
@@ -35,12 +28,11 @@ public class StoneHolderItem extends Item {
         this.stoneType = stoneType;
     }
 
-    /** Returns the key for the stone type this holder accepts (e.g., "mind", "power", etc.) */
     public String getStoneKey() {
         return this.stoneType;
     }
 
-    /** Static helper to get the stone stored inside a StoneHolderItem */
+    /** Extracts the single stone inside */
     public static ItemStack getStone(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return ItemStack.EMPTY;
         ItemStackHandler handler = new ItemStackHandler(1);
@@ -50,18 +42,28 @@ public class StoneHolderItem extends Item {
         return handler.getStackInSlot(0);
     }
 
-    /** Static helper to set the stone back inside a StoneHolderItem after mutation */
+    /** Puts a (possibly mutated) stone back and updates model predicate bitmask */
     public static void setStone(ItemStack holder, ItemStack inside) {
         if (holder == null || holder.isEmpty()) return;
         ItemStackHandler handler = new ItemStackHandler(1);
         handler.setStackInSlot(0, inside);
-        if (!holder.hasTag()) holder.setTag(new net.minecraft.nbt.CompoundTag());
+        if (!holder.hasTag()) holder.setTag(new CompoundTag());
         holder.getTag().put("Stone", handler.serializeNBT());
+        updateStoneBitmaskNBT(holder);
     }
 
-    /** Capability for inventory handler */
+    /** Returns 0 (empty) or 1 (has stone) for predicate */
+    public static int getStonePresenceBit(ItemStack stack) {
+        return getStone(stack).isEmpty() ? 0 : 1;
+    }
+
+    /** Writes the bit to NBT for model predicate override */
+    public static void updateStoneBitmaskNBT(ItemStack stack) {
+        stack.getOrCreateTag().putInt("StoneBitmask", getStonePresenceBit(stack));
+    }
+
     @Override
-    public net.minecraftforge.common.capabilities.ICapabilityProvider initCapabilities(ItemStack stack, net.minecraft.nbt.CompoundTag nbt) {
+    public net.minecraftforge.common.capabilities.ICapabilityProvider initCapabilities(ItemStack stack, CompoundTag nbt) {
         return new net.minecraftforge.common.capabilities.ICapabilityProvider() {
             private final LazyOptional<IItemHandler> handler = LazyOptional.of(() ->
                     new ItemStackHandler(1) {
@@ -78,17 +80,17 @@ public class StoneHolderItem extends Item {
         };
     }
 
-    /** Logic to check if this stack is the correct stone for this holder */
+    /** Ensures only the matching stone type can go inside */
     public boolean isCorrectStone(ItemStack stack) {
         if (stoneType == null) return false;
         return switch (stoneType) {
-            case "mind" -> stack.getItem() instanceof MindStoneItem;
-            case "power" -> stack.getItem() instanceof PowerStoneItem;
-            case "space" -> stack.getItem() instanceof SpaceStoneItem;
-            case "reality" -> stack.getItem() instanceof RealityStoneItem;
-            case "soul" -> stack.getItem() instanceof SoulStoneItem;
-            case "time" -> stack.getItem() instanceof TimeStoneItem;
-            default -> false;
+            case "mind"    -> stack.getItem() instanceof org.jcs.egm.stones.stone_mind.MindStoneItem;
+            case "power"   -> stack.getItem() instanceof org.jcs.egm.stones.stone_power.PowerStoneItem;
+            case "space"   -> stack.getItem() instanceof org.jcs.egm.stones.stone_space.SpaceStoneItem;
+            case "reality" -> stack.getItem() instanceof org.jcs.egm.stones.stone_reality.RealityStoneItem;
+            case "soul"    -> stack.getItem() instanceof org.jcs.egm.stones.stone_soul.SoulStoneItem;
+            case "time"    -> stack.getItem() instanceof org.jcs.egm.stones.stone_time.TimeStoneItem;
+            default          -> false;
         };
     }
 
@@ -99,10 +101,6 @@ public class StoneHolderItem extends Item {
         );
     }
 
-    public String getStoneType() {
-        return stoneType;
-    }
-
     @Override
     public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand) {
         ItemStack holder = player.getItemInHand(hand);
@@ -110,17 +108,47 @@ public class StoneHolderItem extends Item {
         if (inside.isEmpty()) {
             return InteractionResultHolder.pass(holder);
         }
-        // Use the *inside* stone for ability selection and activation
         IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.getStoneKey(), inside);
         if (ability != null && ability.canHoldUse()) {
             player.startUsingItem(hand);
             return InteractionResultHolder.consume(holder);
         } else if (ability != null && !world.isClientSide) {
             ability.activate(world, player, inside);
-            // After use, save any NBT changes to the stone back into the holder!
             setStone(holder, inside);
             return InteractionResultHolder.success(holder);
         }
         return InteractionResultHolder.pass(holder);
+    }
+
+    @Override
+    public int getUseDuration(ItemStack stack) {
+        return 72000;
+    }
+
+    @Override
+    public UseAnim getUseAnimation(ItemStack stack) {
+        return UseAnim.BOW;
+    }
+
+    @Override
+    public void onUseTick(Level world, LivingEntity entity, ItemStack holder, int count) {
+        if (!(entity instanceof Player player)) return;
+        ItemStack inside = getStone(holder);
+        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.stoneType, inside);
+        if (ability != null && ability.canHoldUse()) {
+            ability.onUsingTick(world, player, inside, count);
+            setStone(holder, inside);
+        }
+    }
+
+    @Override
+    public void releaseUsing(ItemStack holder, Level world, LivingEntity entity, int timeLeft) {
+        if (!(entity instanceof Player player)) return;
+        ItemStack inside = getStone(holder);
+        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.stoneType, inside);
+        if (ability != null && ability.canHoldUse()) {
+            ability.releaseUsing(world, player, inside, timeLeft);
+            setStone(holder, inside);
+        }
     }
 }

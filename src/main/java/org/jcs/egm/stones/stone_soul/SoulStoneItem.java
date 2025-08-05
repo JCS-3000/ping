@@ -43,7 +43,6 @@ public class SoulStoneItem extends StoneItem {
         if (ability == null) {
             return InteractionResultHolder.pass(stack);
         }
-        // Only click ability at present
         if (ability.canHoldUse()) {
             player.startUsingItem(hand);
             return InteractionResultHolder.consume(stack);

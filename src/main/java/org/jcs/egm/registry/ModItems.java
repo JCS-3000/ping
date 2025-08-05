@@ -2,6 +2,7 @@ package org.jcs.egm.registry;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -44,7 +45,7 @@ public class ModItems {
     public static final RegistryObject<Item> MIND_STONE_HOLDER =
             ITEMS.register("lokian_scepter", () -> new StoneHolderItem("mind", new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> POWER_STONE_HOLDER =
-            ITEMS.register("orb_of_morag", () -> new StoneHolderItem("power", new Item.Properties().stacksTo(1)));
+            ITEMS.register("kree_warhammer", () -> new StoneHolderItem("power", new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> SPACE_STONE_HOLDER =
             ITEMS.register("tesseract", () -> new StoneHolderItem("space", new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> REALITY_STONE_HOLDER =
@@ -53,6 +54,7 @@ public class ModItems {
             ITEMS.register("red_skull", () -> new StoneHolderItem("soul", new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> TIME_STONE_HOLDER =
             ITEMS.register("eye_of_agamotto", () -> new StoneHolderItem("time", new Item.Properties().stacksTo(1)));
+
 
     // URU
     public static final RegistryObject<Item> INGOT_URU = ITEMS.register("ingot_uru",

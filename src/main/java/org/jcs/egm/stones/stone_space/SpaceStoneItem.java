@@ -14,7 +14,6 @@ public class SpaceStoneItem extends StoneItem {
     @Override
     public int getColor() { return 0x283095; }
 
-
     public SpaceStoneItem(Properties properties) {
         super(properties);
     }
@@ -25,7 +24,6 @@ public class SpaceStoneItem extends StoneItem {
         if (ability == null) {
             return InteractionResultHolder.pass(stack);
         }
-        // Only click ability at present
         if (ability.canHoldUse()) {
             player.startUsingItem(hand);
             return InteractionResultHolder.consume(stack);
@@ -34,15 +32,5 @@ public class SpaceStoneItem extends StoneItem {
             return InteractionResultHolder.success(stack);
         }
         return InteractionResultHolder.pass(stack);
-    }
-
-    @Override
-    public void onUseTick(Level world, Player player, ItemStack stack, int count) {
-        // No hold-use ability for space stone currently
-    }
-
-    @Override
-    public void releaseUsing(ItemStack stack, Level world, Player player, int timeLeft) {
-        // No hold-use ability for space stone currently
     }
 }
