@@ -1,0 +1,68 @@
+{
+	"format_version": "1.21.6",
+	"credit": "Made with Blockbench",
+	"texture_size": [32, 32],
+	"textures": {
+		"1": "egm:item/red_skull_assets/red_skull_texture"
+	},
+	"elements": [
+		{
+			"name": "head",
+			"from": [4, 6, 4],
+			"to": [12, 14, 12],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, -18, 8]},
+			"faces": {
+				"north": {"uv": [4, 4, 8, 8], "texture": "#1"},
+				"east": {"uv": [0, 4, 4, 8], "texture": "#1"},
+				"south": {"uv": [12, 4, 16, 8], "texture": "#1"},
+				"west": {"uv": [8, 4, 12, 8], "texture": "#1"},
+				"up": {"uv": [8, 4, 4, 0], "texture": "#1"},
+				"down": {"uv": [12, 0, 8, 4], "texture": "#1"}
+			}
+		},
+		{
+			"from": [5, 7, 5],
+			"to": [11, 13, 11],
+			"rotation": {"angle": 0, "axis": "y", "origin": [6, 7, 6]},
+			"faces": {
+				"north": {"uv": [4, 8, 6, 10], "texture": "#1"},
+				"east": {"uv": [6, 8, 8, 10], "texture": "#1"},
+				"south": {"uv": [0, 8, 2, 10], "texture": "#1"},
+				"west": {"uv": [10, 8, 12, 10], "texture": "#1"},
+				"up": {"uv": [10, 10, 8, 8], "texture": "#1"},
+				"down": {"uv": [4, 8, 2, 10], "texture": "#1"}
+			}
+		}
+	],
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [73, 0, 0],
+			"translation": [0, 1.25, -0.75],
+			"scale": [0.75, 0.75, 0.75]
+		},
+		"thirdperson_lefthand": {
+			"rotation": [73, 0, 0],
+			"translation": [0, 1.25, -0.75],
+			"scale": [0.75, 0.75, 0.75]
+		},
+		"gui": {
+			"rotation": [0, 146, 0],
+			"translation": [0, -1.75, 0]
+		},
+		"head": {
+			"translation": [0, -4, 0],
+			"scale": [2.2, 2.2, 2.2]
+		},
+		"fixed": {
+			"translation": [0, -1.5, 0]
+		}
+	},
+	"groups": [
+		{
+			"name": "head",
+			"origin": [8, 24, 8],
+			"color": 0,
+			"children": [0, 1]
+		}
+	]
+}
