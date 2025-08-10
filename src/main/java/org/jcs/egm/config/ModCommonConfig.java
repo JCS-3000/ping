@@ -15,8 +15,18 @@ public class ModCommonConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> MIND_STONE_WALLCLIMB_ENTITIES;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> MIND_STONE_SWIMSPEED_ENTITIES;
 
+    // General toggles
+    public static final ForgeConfigSpec.BooleanValue ENABLE_CAMERA_SHAKE;
+
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+
+        // General
+        builder.push("General");
+        ENABLE_CAMERA_SHAKE = builder
+                .comment("If true, certain abilities (e.g., Shockwave Slam) will trigger a client-side camera shake.")
+                .define("enable_camera_shake", true);
+        builder.pop();
 
         // Reality Stone section
         builder.push("RealityStone");

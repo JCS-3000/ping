@@ -39,6 +39,7 @@ public class NetworkHandler {
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
 
+        // Stone ability index (client → server)
         INSTANCE.registerMessage(
                 id++,
                 C2SSetStoneAbilityIndex.class,
@@ -48,6 +49,7 @@ public class NetworkHandler {
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
 
+        // Stone Holder menu open (client → server)
         INSTANCE.registerMessage(
                 id++,
                 OpenStoneHolderMenuPacket.class,
@@ -57,6 +59,7 @@ public class NetworkHandler {
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
 
+        // Ability index (client → server)
         INSTANCE.registerMessage(
                 id++,
                 SetAbilityIndexPacket.class,
@@ -64,6 +67,16 @@ public class NetworkHandler {
                 SetAbilityIndexPacket::decode,
                 (msg, ctx) -> msg.handle(ctx),
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+        // 🔽 NEW: Camera shake (server → client)
+        INSTANCE.registerMessage(
+                id++,
+                org.jcs.egm.network.packet.ShakeCameraPacket.class,
+                org.jcs.egm.network.packet.ShakeCameraPacket::encode,
+                org.jcs.egm.network.packet.ShakeCameraPacket::decode,
+                org.jcs.egm.network.packet.ShakeCameraPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
     }
 }

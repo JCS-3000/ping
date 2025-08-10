@@ -15,3 +15,7 @@
 	#Entities that gain increased swim speed when possessed. Format: modid:entity_name.
 	mind_stone_swimspeed_entities = ["minecraft:squid", "minecraft:glow_squid", "minecraft:axolotl", "minecraft:dolphin", "minecraft:cod", "minecraft:salmon", "minecraft:pufferfish", "minecraft:tropical_fish", "minecraft:turtle"]
 
+[General]
+	#If true, certain abilities (e.g., Shockwave Slam) will trigger a client-side camera shake.
+	enable_camera_shake = true
+
