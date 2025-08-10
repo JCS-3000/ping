@@ -13,6 +13,7 @@ import org.jcs.egm.holders.StoneHolderItem;
 
 /**
  * Base class for all Infinity Stones.
+ * Now includes cooldown utilities and a common handler for instant/hold abilities.
  */
 public abstract class StoneItem extends Item {
 
@@ -104,11 +105,10 @@ public abstract class StoneItem extends Item {
         return UseAnim.BOW;
     }
 
-    // --- Crucial: Forward use-tick and release to the active ability for RAW stones ---
+    // --- Forward use-tick and release to the active ability for RAW stones ---
     @Override
     public void onUseTick(Level world, LivingEntity entity, ItemStack stack, int count) {
         if (!(entity instanceof Player player)) return;
-        StoneState state = getStoneState(player, stack);
         IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.getKey(), stack);
         if (ability != null && ability.canHoldUse()) {
             ability.onUsingTick(world, player, stack, count);
@@ -118,14 +118,16 @@ public abstract class StoneItem extends Item {
     @Override
     public void releaseUsing(ItemStack stack, Level world, LivingEntity entity, int timeLeft) {
         if (!(entity instanceof Player player)) return;
-        StoneState state = getStoneState(player, stack);
         IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.getKey(), stack);
         if (ability != null && ability.canHoldUse()) {
             ability.releaseUsing(world, player, stack, timeLeft);
+            // NOTE: Cooldown for hold abilities should be applied by the ability
+            // at the exact moment it "fires", e.g.:
+            // StoneAbilityCooldowns.applyFromStack(player, stack, getKey(), ability);
         }
     }
 
-    // --- Abstract hooks for each stone’s actual ability ---
+    // --- Abstract hook for each stone’s actual ability dispatch ---
     protected abstract InteractionResultHolder<ItemStack> handleStoneUse(Level world, Player player, InteractionHand hand, ItemStack stack, StoneState state);
 
     /** Override if your stone uses on-tick charging */
@@ -142,5 +144,49 @@ public abstract class StoneItem extends Item {
         if (names == null || names.isEmpty()) return;
         int idx = stack.hasTag() ? stack.getTag().getInt("AbilityIndex") : 0;
         mc.setScreen(new org.jcs.egm.client.StoneAbilityMenuScreen(stack, hand, names, idx));
+    }
+
+    // ========================================================================
+    // Cooldown helpers + a common dispatcher you can call from handleStoneUse()
+    // ========================================================================
+
+    /** True if the vanilla cooldown overlay is active for this item. */
+    protected final boolean isOnCooldown(Player player) {
+        return StoneAbilityCooldowns.isCooling(player, this);
+    }
+
+    /** Apply cooldown for an instant ability (uses this item for the overlay). */
+    protected final void applyInstantCooldown(Player player, IGStoneAbility ability) {
+        StoneAbilityCooldowns.apply(player, this, getKey(), ability);
+    }
+
+    /**
+     * Common dispatcher:
+     * - Blocks use if this item is cooling.
+     * - For hold abilities: only checks cooldown and starts using; the ability must call
+     *   StoneAbilityCooldowns.applyFromStack(...) when it actually fires.
+     * - For instant abilities: activates on server and applies cooldown immediately.
+     */
+    protected final InteractionResultHolder<ItemStack> handleAbilityWithCooldown(Level world, Player player, InteractionHand hand, ItemStack stack, IGStoneAbility ability) {
+        if (ability == null) return InteractionResultHolder.pass(stack);
+
+        // If any ability is attempted while this item is on cooldown, block.
+        if (isOnCooldown(player)) {
+            return InteractionResultHolder.pass(stack);
+        }
+
+        if (ability.canHoldUse()) {
+            // Start using; cooldown applied later by the ability when it fires.
+            player.startUsingItem(hand);
+            return InteractionResultHolder.consume(stack);
+        }
+
+        // Instant ability: run server-side & apply cooldown immediately
+        if (!world.isClientSide) {
+            ability.activate(world, player, stack);
+            applyInstantCooldown(player, ability);
+            return InteractionResultHolder.success(stack);
+        }
+        return InteractionResultHolder.pass(stack);
     }
 }

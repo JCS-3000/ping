@@ -29,6 +29,10 @@ import java.util.List;
 import java.util.Set;
 
 public class SoulBindSoulStoneAbility implements IGStoneAbility {
+
+    @Override
+    public String abilityKey() { return "soul_bind"; }
+
     private static final int RADIUS  = 10; // 21×21 area
     private static final int Y_RANGE = 3;  // 3 up/down
     private static final int COOLDOWN_TICKS_HAND = 120; // 6 seconds

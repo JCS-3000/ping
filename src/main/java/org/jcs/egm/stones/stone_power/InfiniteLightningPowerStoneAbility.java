@@ -26,6 +26,9 @@ import java.util.*;
 
 public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
 
+    @Override
+    public String abilityKey() { return "infinite_lightning"; }
+
     private final Map<UUID, PowerStoneLightningEntity> activeBeams = new HashMap<>();
     private final Map<UUID, Integer> bedrockHitTicks = new HashMap<>();
     private final Map<BlockPos, Integer> miningTicks = new HashMap<>();

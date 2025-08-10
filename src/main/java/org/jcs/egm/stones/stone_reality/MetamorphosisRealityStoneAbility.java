@@ -31,6 +31,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class MetamorphosisRealityStoneAbility implements IGStoneAbility {
+
+    @Override
+    public String abilityKey() { return "metamorphosis"; }
+
     private static final int COOLDOWN_TICKS_HAND = 120; // 6 seconds
     private static final int COOLDOWN_TICKS_GAUNTLET = 10; // .5 seconds
     private static final double MAX_RANGE = 50.0D;

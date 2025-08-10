@@ -55,7 +55,10 @@ public class GauntletOverlayRenderer {
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();
 
-        int y = screenHeight - 48;
+        //
+        // HEIGHT ABOVE XP BAR
+        //
+        int y = screenHeight - 34;
 
         String displayText;
         int color;

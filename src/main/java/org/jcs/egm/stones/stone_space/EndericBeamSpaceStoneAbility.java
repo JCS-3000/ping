@@ -13,6 +13,10 @@ import net.minecraft.world.phys.Vec3;
 import org.jcs.egm.stones.IGStoneAbility;
 
 public class EndericBeamSpaceStoneAbility implements IGStoneAbility {
+
+    @Override
+    public String abilityKey() { return "enderic_beam"; }
+
     @Override
     public void activate(Level level, Player player, ItemStack stack) {
         if (level.isClientSide) return;

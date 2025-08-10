@@ -24,6 +24,9 @@ import java.util.*;
 
 public class ShockwaveSlamPowerStoneAbility implements IGStoneAbility {
 
+    @Override
+    public String abilityKey() { return "shockwave_slam"; }
+
     // ========= Tuning =========
     // Charge
     private static final int CHARGE_TICKS = 60;          // 3s charge at 20 TPS

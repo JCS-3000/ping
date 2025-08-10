@@ -3,6 +3,8 @@ package org.jcs.egm.stones;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.Locale;
+
 /**
  * Universal contract for all Infinity Stone abilities.
  */
@@ -18,4 +20,9 @@ public interface IGStoneAbility {
 
     // Should the ability be triggered via holding use? (otherwise, click triggers)
     default boolean canHoldUse() { return true; }
+
+    default String abilityKey() {
+        return this.getClass().getSimpleName().toLowerCase(Locale.ROOT);
+    }
+
 }

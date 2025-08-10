@@ -12,6 +12,10 @@ import org.jcs.egm.stones.IGStoneAbility;
 import java.util.List;
 
 public class PacifyTimeStoneAbility implements IGStoneAbility {
+
+    @Override
+    public String abilityKey() { return "pacify"; }
+
     @Override
     public void activate(Level level, Player player, ItemStack stack) {
         if (!(player instanceof ServerPlayer serverPlayer)) return;
