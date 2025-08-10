@@ -3,7 +3,7 @@
 	"credit": "Made with Blockbench",
 	"texture_size": [32, 32],
 	"textures": {
-		"1": "egm:item/red_skull_assets/red_skull_texture"
+		"1": "egm:item/red_skull_assets/red_skull_no_stone"
 	},
 	"elements": [
 		{

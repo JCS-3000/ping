@@ -1,6 +1,18 @@
 {
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "egm:item/stone_power"
+  "parent": "minecraft:item/handheld",
+  "loader": "forge:separate_transforms",
+  "base": {
+    "parent": "egm:item/stone_variants/power_stone_3d"
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "egm:item/stone_variants/power_stone_2d"
+    },
+    "ground": {
+      "parent": "egm:item/stone_variants/power_stone_3d"
+    },
+    "fixed": {
+      "parent": "egm:item/stone_variants/power_stone_2d"
+    }
   }
 }
