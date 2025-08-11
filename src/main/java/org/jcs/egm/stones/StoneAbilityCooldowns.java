@@ -45,20 +45,19 @@ public final class StoneAbilityCooldowns {
         set("space","enderic_beam").cooldown(360);
 
         // ===== REALITY =====
-        set("reality","willed_chaos").cooldown(120);
-        set("reality", "metamorphosis").cooldown(120);
+        set("reality","willed_chaos").cooldown(240);
+        set("reality", "metamorphosis").cooldown(3600);
 
         // ===== TIME =====
-        set("time","pacify").cooldown(240);
+        set("time","pacify").cooldown(360);
         set("time","bubble").cooldown(6000); // 5 minutes
-        set("time", "freeze").cooldown(40);
+        set("time", "freeze").cooldown(3600);
 
 
         // ===== MIND =====
-        set("mind","cower").cooldown(240);
         set("mind","disarm").cooldown(300);
         set("mind","enrage").cooldown(360);
-        set("mind","stun").cooldown(180);
+
     }
 
     private StoneAbilityCooldowns() {}

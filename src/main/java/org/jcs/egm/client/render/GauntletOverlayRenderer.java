@@ -58,7 +58,7 @@ public class GauntletOverlayRenderer {
         //
         // HEIGHT ABOVE XP BAR
         //
-        int y = screenHeight - 46;
+        int y = screenHeight - 32;
 
         String displayText;
         int color;
