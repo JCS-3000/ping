@@ -46,7 +46,7 @@ public final class StoneAbilityCooldowns {
 
         // ===== REALITY =====
         set("reality","willed_chaos").cooldown(120);
-        set("reality", "metamorphosis").cooldown(3600);
+        set("reality", "metamorphosis").cooldown(120);
 
         // ===== TIME =====
         set("time","pacify").cooldown(240);

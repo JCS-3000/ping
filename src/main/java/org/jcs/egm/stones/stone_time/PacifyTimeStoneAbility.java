@@ -33,7 +33,6 @@ public class PacifyTimeStoneAbility implements IGStoneAbility {
     private static final SoundEvent TWINKLE_SOUND =
             SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "universal_twinkle"));
 
-    // Time Stone greens
     private static final int COLOR_A = 0x62FF2D;
     private static final int COLOR_B = 0x0AAA67;
 
@@ -48,24 +47,20 @@ public class PacifyTimeStoneAbility implements IGStoneAbility {
         final int useDuration = player.getUseItem().getUseDuration();
         final int ticksHeld = useDuration - count;
 
-        // While charging: server streams wrist-ring updates; client plays loop SFX
         if (ticksHeld < CHARGE_TICKS) {
             if (!level.isClientSide) {
                 CHARGE.put(id, ticksHeld);
                 if ((player.tickCount & 1) == 0) {
                     NetworkHandler.sendWristRing(player, ticksHeld, COLOR_A, COLOR_B);
                 }
-            } else {
-                if (!CHARGING_SOUND_PLAYERS.contains(id)) {
-                    level.playLocalSound(player.getX(), player.getY(), player.getZ(),
-                            CHARGING_SOUND, SoundSource.PLAYERS, 0.9f, 1.0f, true);
-                    CHARGING_SOUND_PLAYERS.add(id);
-                }
+            } else if (!CHARGING_SOUND_PLAYERS.contains(id)) {
+                level.playLocalSound(player.getX(), player.getY(), player.getZ(),
+                        CHARGING_SOUND, SoundSource.PLAYERS, 0.9f, 1.0f, true);
+                CHARGING_SOUND_PLAYERS.add(id);
             }
             return;
         }
 
-        // Keep streaming ring at/after full charge until fire
         if (!level.isClientSide && (player.tickCount & 1) == 0) {
             NetworkHandler.sendWristRing(player, ticksHeld, COLOR_A, COLOR_B);
         }

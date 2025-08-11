@@ -26,27 +26,22 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
     @Override public boolean canHoldUse() { return true; }
     @Override public void activate(Level level, Player player, ItemStack stack) {}
 
-    // Charge/UX
     private static final int CHARGE_TICKS = 80;
     private static final boolean AUTO_FIRE_AT_FULL = true;
 
-    // Effect params
     private static final int   RADIUS_BLOCKS     = 16;
     private static final int   DURATION_TICKS    = 20 * 60;
     private static final int   TARGET_TICKSPEED  = 1200;
     private static final int   FIREWORK_POINTS   = 420;
 
-    // Sounds
     private static final SoundEvent CHARGING_SOUND =
             SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "time_stone_charging"));
     private static final SoundEvent TWINKLE_SOUND =
             SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "universal_twinkle"));
 
-    // Colors
     private static final int COLOR_A = 0x62FF2D;
     private static final int COLOR_B = 0x0AAA67;
 
-    // Client bookkeeping
     private static final Set<UUID> CHARGING_SOUND_PLAYERS = new HashSet<>();
     private static final Map<UUID, Integer> CHARGE = new HashMap<>();
 
@@ -62,12 +57,10 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
                 if ((player.tickCount & 1) == 0) {
                     NetworkHandler.sendWristRing(player, ticksHeld, COLOR_A, COLOR_B);
                 }
-            } else {
-                if (!CHARGING_SOUND_PLAYERS.contains(id)) {
-                    level.playLocalSound(player.getX(), player.getY(), player.getZ(),
-                            CHARGING_SOUND, SoundSource.PLAYERS, 0.9f, 1.0f, true);
-                    CHARGING_SOUND_PLAYERS.add(id);
-                }
+            } else if (!CHARGING_SOUND_PLAYERS.contains(id)) {
+                level.playLocalSound(player.getX(), player.getY(), player.getZ(),
+                        CHARGING_SOUND, SoundSource.PLAYERS, 0.9f, 1.0f, true);
+                CHARGING_SOUND_PLAYERS.add(id);
             }
             return;
         }
@@ -85,7 +78,6 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
             }
         } else if (AUTO_FIRE_AT_FULL && level.isClientSide) {
             stopChargingSoundClient(id);
-            // Mirror the big burst locally so it uses addParticle()
             spawnSphericalBurstClient(level, player.position().add(0, player.getBbHeight() * 0.5, 0));
         }
     }
@@ -109,15 +101,12 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
     private void fire(Level level, Player player, ItemStack stoneStack) {
         if (StoneAbilityCooldowns.guardUse(player, stoneStack, "time", this)) return;
 
-        // SFX
         level.playSound(null, player.blockPosition(), TWINKLE_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F);
 
-        // Server broadcast burst for other players
         if (level instanceof ServerLevel sl) {
             spawnSphericalBurst(sl, player.position().add(0, player.getBbHeight() * 0.5, 0));
         }
 
-        // Spawn the logical field
         if (!level.isClientSide) {
             ServerLevel sl = (ServerLevel) level;
             TimeBubbleFieldEntity field = new TimeBubbleFieldEntity(ModEntities.TIME_ACCEL_FIELD.get(), sl)
@@ -126,11 +115,10 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
             sl.addFreshEntity(field);
         }
 
-        // Cooldown
         StoneAbilityCooldowns.apply(player, stoneStack, "time", this);
     }
 
-    // ===== visuals (unchanged bursts) =====
+    // ===== visuals =====
     private void spawnSphericalBurst(ServerLevel sl, Vec3 origin) {
         RandomSource r = sl.random;
         for (int i = 0; i < FIREWORK_POINTS; i++) {
@@ -150,8 +138,9 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
             int hex = (i & 1) == 0 ? COLOR_A : COLOR_B;
             float[] rgb = rgb01(hex);
 
-            sl.sendParticles(ModParticles.UNIVERSAL_PARTICLE_ONE.get(),
-                    px, py, pz, 0, rgb[0], rgb[1], rgb[2], 0.0);
+            // S2C: preserve exact tint for everyone (avoid black particles)
+            NetworkHandler.sendTintedParticle(sl, ModParticles.UNIVERSAL_PARTICLE_ONE.get(),
+                    px, py, pz, rgb[0], rgb[1], rgb[2]);
         }
     }
 
