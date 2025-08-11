@@ -15,14 +15,14 @@ public class ModEntities {
 
     public static final RegistryObject<EntityType<PowerStoneLightningEntity>> POWER_STONE_LIGHTNING =
             ENTITIES.register("power_stone_lightning",
-                    () -> EntityType.Builder.<PowerStoneLightningEntity>of(PowerStoneLightningEntity::new, MobCategory.MISC)
+                    () -> EntityType.Builder.of(PowerStoneLightningEntity::new, MobCategory.MISC)
                             .sized(0.2f, 0.2f)
                             .clientTrackingRange(128)
                             .build("power_stone_lightning"));
 
     public static final RegistryObject<EntityType<TimeBubbleFieldEntity>> TIME_ACCEL_FIELD =
             ENTITIES.register("time_accel_field",
-                    () -> EntityType.Builder.<TimeBubbleFieldEntity>of(TimeBubbleFieldEntity::new, MobCategory.MISC)
+                    () -> EntityType.Builder.of(TimeBubbleFieldEntity::new, MobCategory.MISC)
                             .sized(0.25f, 0.25f)
                             .clientTrackingRange(128)
                             .updateInterval(1)

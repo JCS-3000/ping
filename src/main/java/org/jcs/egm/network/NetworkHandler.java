@@ -1,8 +1,11 @@
 package org.jcs.egm.network;
 
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.jcs.egm.client.input.GauntletSelectedStonePacket;
 import org.jcs.egm.egm;
@@ -78,7 +81,8 @@ public class NetworkHandler {
                 org.jcs.egm.network.packet.ShakeCameraPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
-        // MORPH
+
+        // Morph (server → client)
         INSTANCE.registerMessage(
                 id++,
                 org.jcs.egm.stones.stone_reality.S2CSyncMorph.class,
@@ -87,5 +91,23 @@ public class NetworkHandler {
                 org.jcs.egm.stones.stone_reality.S2CSyncMorph::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
+
+        // NEW: Wrist ring (server → client)
+        INSTANCE.registerMessage(
+                id++,
+                org.jcs.egm.network.RingFXPacket.class,
+                org.jcs.egm.network.RingFXPacket::encode,
+                org.jcs.egm.network.RingFXPacket::new,
+                (msg, ctx) -> msg.handle(ctx),
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+    }
+
+    /** Broadcast the charging wrist ring around a player to everyone tracking them (and to the player). */
+    public static void sendWristRing(Player player, int ticksHeld, int colorAHex, int colorBHex) {
+        if (!(player.level() instanceof ServerLevel)) return;
+        org.jcs.egm.network.RingFXPacket pkt =
+                new org.jcs.egm.network.RingFXPacket(player.getId(), ticksHeld, colorAHex, colorBHex);
+        INSTANCE.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), pkt);
     }
 }

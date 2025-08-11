@@ -53,7 +53,7 @@ public class SoulRealmChunkGenerator extends ChunkGenerator {
         boolean[][] isWater = new boolean[16][16];
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
-                long localSeed = (((pos.x << 4) + x) * 341873128712L + ((pos.z << 4) + z) * 132897987541L) ^ 987654321L;
+                long localSeed = ((((long) pos.x << 4) + x) * 341873128712L + (((long) pos.z << 4) + z) * 132897987541L) ^ 987654321L;
                 Random cellRand = new Random(localSeed);
                 isWater[x][z] = cellRand.nextFloat() < 0.12f; // Lower = less water
             }

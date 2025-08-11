@@ -79,7 +79,7 @@ public class MetamorphosisRealityStoneAbility implements IGStoneAbility {
 
         // Respect metamorphosis entity blacklist
         ResourceLocation srcId = ForgeRegistries.ENTITY_TYPES.getKey(living.getType());
-        if (srcId != null && (WilledChaosBlacklistHelper.isHardcodedEntityBlacklisted(srcId)
+        if ((WilledChaosBlacklistHelper.isHardcodedEntityBlacklisted(srcId)
                 || WilledChaosBlacklistHelper.isConfigEntityBlacklisted(srcId))) {
             return;
         }

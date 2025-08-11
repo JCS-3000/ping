@@ -11,49 +11,44 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import org.jcs.egm.client.particle.UniversalTintParticle;
 import org.jcs.egm.entity.TimeBubbleFieldEntity;
+import org.jcs.egm.network.NetworkHandler;
 import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
 import org.jcs.egm.stones.StoneAbilityCooldowns;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
 
     @Override public String abilityKey() { return "bubble"; }
+    @Override public boolean canHoldUse() { return true; }
+    @Override public void activate(Level level, Player player, ItemStack stack) {}
 
     // Charge/UX
-    private static final int CHARGE_TICKS = 80;               // 4s @ 20 tps
+    private static final int CHARGE_TICKS = 80;
     private static final boolean AUTO_FIRE_AT_FULL = true;
 
     // Effect params
     private static final int   RADIUS_BLOCKS     = 16;
-    private static final int   DURATION_TICKS    = 20 * 60;   // 60s
-    private static final int   TARGET_TICKSPEED  = 1200;       // aggressive
-    private static final int   FIREWORK_POINTS   = 420;       // burst density
+    private static final int   DURATION_TICKS    = 20 * 60;
+    private static final int   TARGET_TICKSPEED  = 1200;
+    private static final int   FIREWORK_POINTS   = 420;
 
-    // Sounds (pre-registered)
+    // Sounds
     private static final SoundEvent CHARGING_SOUND =
             SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "time_stone_charging"));
     private static final SoundEvent TWINKLE_SOUND =
             SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "universal_twinkle"));
 
-    // Time Stone Colors (TSC)
-    private static final int COLOR_A = 0x62FF2D; // bright
-    private static final int COLOR_B = 0x0AAA67; // dark
+    // Colors
+    private static final int COLOR_A = 0x62FF2D;
+    private static final int COLOR_B = 0x0AAA67;
 
     // Client bookkeeping
     private static final Set<UUID> CHARGING_SOUND_PLAYERS = new HashSet<>();
     private static final Map<UUID, Integer> CHARGE = new HashMap<>();
-
-    @Override public boolean canHoldUse() { return true; }
-    @Override public void activate(Level level, Player player, ItemStack stack) {}
 
     @Override
     public void onUsingTick(Level level, Player player, ItemStack stack, int count) {
@@ -64,19 +59,21 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
         if (ticksHeld < CHARGE_TICKS) {
             if (!level.isClientSide) {
                 CHARGE.put(id, ticksHeld);
+                if ((player.tickCount & 1) == 0) {
+                    NetworkHandler.sendWristRing(player, ticksHeld, COLOR_A, COLOR_B);
+                }
             } else {
                 if (!CHARGING_SOUND_PLAYERS.contains(id)) {
                     level.playLocalSound(player.getX(), player.getY(), player.getZ(),
                             CHARGING_SOUND, SoundSource.PLAYERS, 0.9f, 1.0f, true);
                     CHARGING_SOUND_PLAYERS.add(id);
                 }
-                if ((ticksHeld & 1) == 0) spawnRightArmRing(level, player, ticksHeld);
             }
             return;
         }
 
-        if (level.isClientSide && (ticksHeld & 1) == 0) {
-            spawnRightArmRing(level, player, ticksHeld);
+        if (!level.isClientSide && (player.tickCount & 1) == 0) {
+            NetworkHandler.sendWristRing(player, ticksHeld, COLOR_A, COLOR_B);
         }
 
         if (AUTO_FIRE_AT_FULL && !level.isClientSide) {
@@ -88,7 +85,7 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
             }
         } else if (AUTO_FIRE_AT_FULL && level.isClientSide) {
             stopChargingSoundClient(id);
-            // Mirror the big burst locally so it uses addParticle() (prevents dark/black tint)
+            // Mirror the big burst locally so it uses addParticle()
             spawnSphericalBurstClient(level, player.position().add(0, player.getBbHeight() * 0.5, 0));
         }
     }
@@ -105,24 +102,22 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
         if (!level.isClientSide) {
             fire(level, player, stack);
         } else {
-            // Mirror on manual release too
             spawnSphericalBurstClient(level, player.position().add(0, player.getBbHeight() * 0.5, 0));
         }
     }
 
-    // ---------- Core fire ----------
     private void fire(Level level, Player player, ItemStack stoneStack) {
         if (StoneAbilityCooldowns.guardUse(player, stoneStack, "time", this)) return;
 
         // SFX
         level.playSound(null, player.blockPosition(), TWINKLE_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F);
 
-        // Server broadcast burst for other players (use universal_particle_one for reliable tint)
+        // Server broadcast burst for other players
         if (level instanceof ServerLevel sl) {
             spawnSphericalBurst(sl, player.position().add(0, player.getBbHeight() * 0.5, 0));
         }
 
-        // Spawn the logical field as an entity (server only)
+        // Spawn the logical field
         if (!level.isClientSide) {
             ServerLevel sl = (ServerLevel) level;
             TimeBubbleFieldEntity field = new TimeBubbleFieldEntity(ModEntities.TIME_ACCEL_FIELD.get(), sl)
@@ -131,56 +126,11 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
             sl.addFreshEntity(field);
         }
 
-        // 5-minute cooldown
+        // Cooldown
         StoneAbilityCooldowns.apply(player, stoneStack, "time", this);
     }
 
-    // ===== visuals =====
-
-    // Right-arm ring using UNIVERSAL_PARTICLE_TWO, shrunk to 0.25x just for these spawns
-    private void spawnRightArmRing(Level level, Player player, int ticksHeld) {
-        final double armY = player.getEyeY() - 0.35;
-
-        // Arm axes: forward points arm direction; right = forward × up (true right)
-        final Vec3 forward = Vec3.directionFromRotation(0, player.getYRot()).normalize();
-        final Vec3 up = new Vec3(0, 1, 0);
-        final Vec3 right = forward.cross(up).normalize();
-
-        // Placement (original)
-        final Vec3 center = new Vec3(player.getX(), armY, player.getZ())
-                .add(right.scale(.22))
-                .add(forward.scale(.33));
-
-        final int points = 12;
-        final double radius = 0.20;
-        final double rotateSpeed = 0.30;
-        final double angleOffset = ticksHeld * rotateSpeed;
-
-        // Shrink only these (client-only)
-        if (level.isClientSide) UniversalTintParticle.setScaleMultiplier(0.25f);
-
-        for (int i = 0; i < points; i++) {
-            double a = angleOffset + (2 * Math.PI * i / points);
-            Vec3 p = center
-                    .add(right.scale(Math.cos(a) * radius))
-                    .add(up.scale(Math.sin(a) * radius));
-
-            int hex = (i & 1) == 0 ? COLOR_A : COLOR_B;
-            float[] rgb = rgb01(hex);
-
-            if (level instanceof ServerLevel sl) {
-                sl.sendParticles(ModParticles.UNIVERSAL_PARTICLE_TWO.get(),
-                        p.x, p.y, p.z, 0, rgb[0], rgb[1], rgb[2], 0.0);
-            } else {
-                level.addParticle(ModParticles.UNIVERSAL_PARTICLE_TWO.get(),
-                        p.x, p.y, p.z, rgb[0], rgb[1], rgb[2]);
-            }
-        }
-
-        if (level.isClientSide) UniversalTintParticle.setScaleMultiplier(1.0f);
-    }
-
-    // Server-side broadcast burst (for other players) – uses sendParticles(...)
+    // ===== visuals (unchanged bursts) =====
     private void spawnSphericalBurst(ServerLevel sl, Vec3 origin) {
         RandomSource r = sl.random;
         for (int i = 0; i < FIREWORK_POINTS; i++) {
@@ -200,13 +150,11 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
             int hex = (i & 1) == 0 ? COLOR_A : COLOR_B;
             float[] rgb = rgb01(hex);
 
-            // Use universal_particle_one for reliable tint across clients
             sl.sendParticles(ModParticles.UNIVERSAL_PARTICLE_ONE.get(),
                     px, py, pz, 0, rgb[0], rgb[1], rgb[2], 0.0);
         }
     }
 
-    // Client-local burst (fixes “black” look) – uses addParticle(...)
     private void spawnSphericalBurstClient(Level level, Vec3 origin) {
         final int points = FIREWORK_POINTS;
         final java.util.Random r = new java.util.Random();
@@ -228,12 +176,10 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
             int hex = (i & 1) == 0 ? COLOR_A : COLOR_B;
             float[] rgb = rgb01(hex);
 
-            level.addParticle(ModParticles.UNIVERSAL_PARTICLE_ONE.get(),
-                    px, py, pz, rgb[0], rgb[1], rgb[2]);
+            level.addParticle(ModParticles.UNIVERSAL_PARTICLE_ONE.get(), px, py, pz, rgb[0], rgb[1], rgb[2]);
         }
     }
 
-    // ---------- utils ----------
     private static float[] rgb01(int hex) {
         return new float[]{ ((hex >> 16) & 0xFF) / 255f, ((hex >> 8) & 0xFF) / 255f, (hex & 0xFF) / 255f };
     }

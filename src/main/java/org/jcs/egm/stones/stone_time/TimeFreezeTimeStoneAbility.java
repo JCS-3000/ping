@@ -17,7 +17,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import org.jcs.egm.client.particle.UniversalTintParticle;
+import org.jcs.egm.network.NetworkHandler;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
 import org.jcs.egm.stones.StoneAbilityCooldowns;
@@ -30,25 +30,21 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
     @Override public String abilityKey() { return "freeze"; }
     @Override public boolean canHoldUse() { return true; }
 
-    // Tuning
-    private static final int CHARGE_TICKS = 80;            // 4s (like Bubble)
+    private static final int CHARGE_TICKS = 80;
     private static final boolean AUTO_FIRE_AT_FULL = true;
     private static final double AOE_RADIUS = 10.0;
-    private static final int FREEZE_TICKS = 200;           // use your current duration
-    private static final int SLOWNESS_LEVEL = 255;         // immobile
-    private static final int DOME_DURATION_TICKS = 200;    // 10s
+    private static final int FREEZE_TICKS = 200;
+    private static final int SLOWNESS_LEVEL = 255;
+    private static final int DOME_DURATION_TICKS = 200;
 
-    // Colors
     private static final int COLOR_A_HEX = 0x62FF2D;
     private static final int COLOR_B_HEX = 0x0AAA67;
 
-    // Sounds (ad-hoc ok client-local)
     private static final SoundEvent CHARGING_SOUND =
             SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "time_stone_charging"));
     private static final SoundEvent ACTIVATE_SOUND =
             SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "universal_twinkle"));
 
-    // Charge state
     private static final Set<UUID> CHARGING_SOUND_PLAYERS = new HashSet<>();
     private static final Map<UUID, Integer> CHARGE = new HashMap<>();
 
@@ -67,19 +63,23 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
         if (ticksHeld < CHARGE_TICKS) {
             if (!level.isClientSide) {
                 CHARGE.put(id, ticksHeld);
+                if ((player.tickCount & 1) == 0) {
+                    NetworkHandler.sendWristRing(player, ticksHeld, COLOR_A_HEX, COLOR_B_HEX);
+                }
             } else {
-                // Client ring: identical pattern to Pacify/Bubble (never blacks out)
                 if (!CHARGING_SOUND_PLAYERS.contains(id)) {
                     level.playLocalSound(player.getX(), player.getY(), player.getZ(),
                             CHARGING_SOUND, SoundSource.PLAYERS, 0.9f, 1.0f, true);
                     CHARGING_SOUND_PLAYERS.add(id);
                 }
-                if ((ticksHeld & 1) == 0) spawnRightArmRingClient(level, player, ticksHeld);
             }
             return;
         }
 
-        // Auto-release at full (server authoritative)
+        if (!level.isClientSide && (player.tickCount & 1) == 0) {
+            NetworkHandler.sendWristRing(player, ticksHeld, COLOR_A_HEX, COLOR_B_HEX);
+        }
+
         if (AUTO_FIRE_AT_FULL && !level.isClientSide) {
             Integer prev = CHARGE.get(id);
             if (prev == null || prev < CHARGE_TICKS) {
@@ -115,15 +115,12 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
     private void fire(Level level, Player player, ItemStack stoneStack) {
         if (StoneAbilityCooldowns.guardUse(player, stoneStack, "time", this)) return;
 
-        // (Client already played local SFX)
         level.playSound(null, player.blockPosition(), ACTIVATE_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F);
 
-        // 10s dome — server spawns with count=0 (RGB carried in vx,vy,vz)
         Vec3 origin = player.position().add(0, 0.2, 0);
         if (level instanceof ServerLevel sl) DomeTicker.spawn(sl, origin, AOE_RADIUS, DOME_DURATION_TICKS,
                 COLOR_A_HEX, COLOR_B_HEX);
 
-        // Freeze
         if (!level.isClientSide) {
             final AABB box = player.getBoundingBox().inflate(AOE_RADIUS);
             for (LivingEntity le : level.getEntitiesOfClass(LivingEntity.class, box, e -> e.isAlive() && e != player)) {
@@ -133,45 +130,6 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
             }
             StoneAbilityCooldowns.apply(player, stoneStack, "time", this);
         }
-    }
-
-    // ===== Client ring (same pattern as your working abilities) =====
-    private void spawnRightArmRingClient(Level level, Player player, int ticksHeld) {
-        final double armY = player.getEyeY() - 0.35;
-
-        final Vec3 forward = Vec3.directionFromRotation(0, player.getYRot()).normalize();
-        final Vec3 up = new Vec3(0, 1, 0);
-        final Vec3 right = forward.cross(up).normalize();
-
-        final Vec3 center = new Vec3(player.getX(), armY, player.getZ())
-                .add(right.scale(.22))
-                .add(forward.scale(.33));
-
-        final int points = 12;
-        final double radius = 0.20;
-        final double rotateSpeed = 0.30;
-        final double angleOffset = ticksHeld * rotateSpeed;
-
-        UniversalTintParticle.setScaleMultiplier(0.25f);
-        for (int i = 0; i < points; i++) {
-            double a = angleOffset + (2 * Math.PI * i / points);
-            Vec3 p = center.add(right.scale(Math.cos(a) * radius)).add(up.scale(Math.sin(a) * radius));
-
-            float[] rgb = rgb01(((i & 1) == 0) ? COLOR_A_HEX : COLOR_B_HEX);
-            // CLIENT path: addParticle with r,g,b (works consistently)
-            level.addParticle(ModParticles.UNIVERSAL_PARTICLE_TWO.get(),
-                    p.x, p.y, p.z,
-                    rgb[0], rgb[1], rgb[2]);
-        }
-        UniversalTintParticle.setScaleMultiplier(1.0f);
-    }
-
-    private static float[] rgb01(int hex) {
-        return new float[]{
-                ((hex >> 16) & 0xFF) / 255f,
-                ((hex >> 8) & 0xFF) / 255f,
-                (hex & 0xFF) / 255f
-        };
     }
 
     private static void stopChargingSoundClient(UUID id) {
@@ -215,8 +173,7 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
         }
 
         private static void spawnDomeShell(ServerLevel sl, Dome d) {
-            // dissipate density over time
-            double life = d.age / (double) d.duration; // 0..1
+            double life = d.age / (double) d.duration;
             int ringCount = 12, basePoints = 22;
             if (d.age > d.duration / 2 && (d.age & 1) == 1) return;
 
@@ -237,12 +194,19 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
                     double z = cz + ringR * Math.sin(theta);
                     float[] rgb = ((i + ring + d.age) & 1) == 0 ? A : B;
 
-                    // SERVER path: count=0 so rgb go in vx,vy,vz (no black)
                     sl.sendParticles(ModParticles.UNIVERSAL_PARTICLE_ONE.get(),
                             x, y, z,
                             0, rgb[0], rgb[1], rgb[2], 0.0);
                 }
             }
+        }
+
+        private static float[] rgb01(int hex) {
+            return new float[]{
+                    ((hex >> 16) & 0xFF) / 255f,
+                    ((hex >> 8) & 0xFF) / 255f,
+                    (hex & 0xFF) / 255f
+            };
         }
     }
 }
