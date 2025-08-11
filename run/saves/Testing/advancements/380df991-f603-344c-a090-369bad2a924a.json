@@ -898,6 +898,7 @@
   },
   "minecraft:husbandry/balanced_diet": {
     "criteria": {
+      "cooked_beef": "2025-08-11 17:29:25 -0400",
       "beef": "2025-08-10 19:40:24 -0400"
     },
     "done": false
@@ -905,6 +906,24 @@
   "minecraft:husbandry/root": {
     "criteria": {
       "consumed_item": "2025-08-10 19:40:24 -0400"
+    },
+    "done": true
+  },
+  "minecraft:recipes/food/baked_potato_from_campfire_cooking": {
+    "criteria": {
+      "has_potato": "2025-08-11 18:46:09 -0400"
+    },
+    "done": true
+  },
+  "minecraft:recipes/food/baked_potato_from_smoking": {
+    "criteria": {
+      "has_potato": "2025-08-11 18:46:09 -0400"
+    },
+    "done": true
+  },
+  "minecraft:recipes/food/baked_potato": {
+    "criteria": {
+      "has_potato": "2025-08-11 18:46:09 -0400"
     },
     "done": true
   },

@@ -39,7 +39,7 @@ public final class StoneAbilityCooldowns {
 
         // ===== SOUL =====
         set("soul","passive_totem").cooldown(12000);
-        set("soul","soul_bind").cooldown(360);
+        set("soul","soul_banish").cooldown(360);
 
         // ===== SPACE =====
         set("space","enderic_beam").cooldown(360);
@@ -49,7 +49,7 @@ public final class StoneAbilityCooldowns {
         set("reality", "metamorphosis").cooldown(3600);
 
         // ===== TIME =====
-        set("time","pacify").cooldown(360);
+        set("time","reversion").cooldown(360);
         set("time","bubble").cooldown(6000); // 5 minutes
         set("time", "freeze").cooldown(3600);
 

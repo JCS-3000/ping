@@ -1,0 +1,6 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "egm:item/stone_assets/reality_texture_2d"
+  }
+}
