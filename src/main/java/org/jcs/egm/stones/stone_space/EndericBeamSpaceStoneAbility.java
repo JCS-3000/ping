@@ -1,6 +1,7 @@
 package org.jcs.egm.stones.stone_space;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,6 +12,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jcs.egm.stones.IGStoneAbility;
+import org.jcs.egm.stones.StoneAbilityCooldowns;
 
 public class EndericBeamSpaceStoneAbility implements IGStoneAbility {
 
@@ -21,47 +23,40 @@ public class EndericBeamSpaceStoneAbility implements IGStoneAbility {
     public void activate(Level level, Player player, ItemStack stack) {
         if (level.isClientSide) return;
 
+        double range = 50.0;
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle();
-        double range = 50.0;
-        Vec3 target = eye.add(look.scale(range));
 
-        // Raytrace for teleport destination
         HitResult hit = player.pick(range, 1.0F, false);
+        Vec3 dest = switch (hit.getType()) {
+            case BLOCK, ENTITY -> hit.getLocation();
+            default -> eye.add(look.scale(range));
+        };
 
-        Vec3 dest;
-        if (hit.getType() == HitResult.Type.BLOCK) {
-            dest = hit.getLocation();
-        } else if (hit.getType() == HitResult.Type.ENTITY) {
-            dest = hit.getLocation();
-        } else {
-            dest = target;
-        }
-
-        // Create a line of bubble particles
-        if (level instanceof ServerLevel serverLevel) {
-            int steps = 30;
-            Vec3 stepVec = dest.subtract(eye).scale(1.0 / steps);
+        // Draw a particle line from eye -> dest (server-side so everyone sees it)
+        if (level instanceof ServerLevel server) {
+            int steps = 40;
+            Vec3 step = dest.subtract(eye).scale(1.0 / steps);
             Vec3 p = eye;
             for (int i = 0; i < steps; i++) {
-                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.BUBBLE,
-                        p.x, p.y, p.z,
-                        1, 0, 0, 0, 0.0);
-                p = p.add(stepVec);
+                server.sendParticles(ParticleTypes.PORTAL, p.x, p.y, p.z, 2, 0.02, 0.02, 0.02, 0.0);
+                p = p.add(step);
             }
         }
 
-        // Teleport player
-        if (player instanceof ServerPlayer serverPlayer) {
-            BlockPos tp = BlockPos.containing(dest.x, dest.y, dest.z);
-            BlockState state = level.getBlockState(tp);
+        // Teleport (safe-ish): refuse inside-solid destination
+        if (player instanceof ServerPlayer sp) {
+            BlockPos pos = BlockPos.containing(dest.x, dest.y, dest.z);
+            BlockState state = level.getBlockState(pos);
             if (!state.blocksMotion()) {
-                serverPlayer.teleportTo(dest.x, dest.y, dest.z);
+                sp.teleportTo(dest.x, dest.y, dest.z);
             } else {
-                serverPlayer.displayClientMessage(
-                        Component.literal("Cannot teleport inside a block!"), true);
+                sp.displayClientMessage(Component.literal("Cannot teleport inside a block!"), true);
             }
         }
+
+        // IMPORTANT: apply container-aware cooldown + player-persistent gate using the STONE stack
+        StoneAbilityCooldowns.apply(player, stack, "space", this);
     }
 
     @Override

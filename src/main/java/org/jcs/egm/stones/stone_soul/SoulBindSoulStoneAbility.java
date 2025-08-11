@@ -21,6 +21,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
+import org.jcs.egm.stones.StoneAbilityCooldowns;
 import org.jcs.egm.stones.StoneItem;
 import org.jcs.egm.stones.StoneUseDamage;
 
@@ -35,8 +36,6 @@ public class SoulBindSoulStoneAbility implements IGStoneAbility {
 
     private static final int RADIUS  = 10; // 21×21 area
     private static final int Y_RANGE = 3;  // 3 up/down
-    private static final int COOLDOWN_TICKS_HAND = 120; // 6 seconds
-    private static final int COOLDOWN_TICKS_GAUNTLET = 40; // seconds
 
     @Override
     public void activate(Level level, Player player, ItemStack stack) {
@@ -44,18 +43,13 @@ public class SoulBindSoulStoneAbility implements IGStoneAbility {
 
         boolean inGauntlet = StoneItem.isInGauntlet(player, stack);
 
-        int cd = inGauntlet ? COOLDOWN_TICKS_GAUNTLET : COOLDOWN_TICKS_HAND;
-        Item cdItem = inGauntlet && stack.getItem().getClass().getSimpleName().equals("InfinityGauntletItem")
-                ? stack.getItem() : player.getMainHandItem().getItem();
-        if (player.getCooldowns().isOnCooldown(cdItem)) return;
-        player.getCooldowns().addCooldown(cdItem, cd);
-        if (!inGauntlet ) player.hurt(StoneUseDamage.get(server, player), 4.0F);
+        Item cdItem = StoneAbilityCooldowns.pickCooldownItem(player, stack);
+        if (StoneAbilityCooldowns.isCooling(player, cdItem)) return;
 
-        // sound feedback
-        server.playSound(null, player.blockPosition(),
-                SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 0.7F, 1.2F);
+        if (!inGauntlet) player.hurt(StoneUseDamage.get(server, player), 4.0F);
 
-        // define area
+        server.playSound(null, player.blockPosition(), SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 0.7F, 1.2F);
+
         BlockPos center = player.blockPosition();
         AABB area = new AABB(
                 center.getX() - RADIUS, center.getY() - Y_RANGE, center.getZ() - RADIUS,
@@ -65,20 +59,18 @@ public class SoulBindSoulStoneAbility implements IGStoneAbility {
         Set<BlockPos> effectPositions = new HashSet<>();
         boolean warned = false;
 
-        // Sends players to soul realm
         ResourceLocation soulRealmKey = new ResourceLocation("egm", "soul_realm");
         ServerLevel soulRealm = server.getServer().getLevel(net.minecraft.resources.ResourceKey.create(
                 net.minecraft.core.registries.Registries.DIMENSION, soulRealmKey));
         if (soulRealm != null) {
             List<Player> targets = server.getEntitiesOfClass(Player.class, area);
             for (Player other : targets) {
-                if (other.getUUID().equals(player.getUUID())) continue; // skip user
-                if (other.level() == soulRealm) continue; // already there
+                if (other.getUUID().equals(player.getUUID())) continue;
+                if (other.level() == soulRealm) continue;
                 other.changeDimension(soulRealm);
             }
         }
 
-        // Step 1: Mob → Egg
         List<LivingEntity> mobs = server.getEntitiesOfClass(LivingEntity.class, area);
         for (LivingEntity mob : mobs) {
             if (!(mob.isAlive()) || mob instanceof Player) continue;
@@ -88,19 +80,15 @@ public class SoulBindSoulStoneAbility implements IGStoneAbility {
                 if (!warned) {
                     player.displayClientMessage(
                             Component.literal("A soul-less creature is nearby")
-                                    .withStyle(Style.EMPTY
-                                    .withItalic(true)
-                                    .withColor(0xD5700E)), true);
+                                    .withStyle(Style.EMPTY.withItalic(true).withColor(0xD5700E)), true);
                     warned = true;
                 }
                 continue;
             }
 
             BlockPos pos = mob.blockPosition();
-            // remove mob
             mob.remove(RemovalReason.DISCARDED);
 
-            // spawn the egg and tag it
             ItemEntity dropped = new ItemEntity(
                     server,
                     pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
@@ -114,10 +102,8 @@ public class SoulBindSoulStoneAbility implements IGStoneAbility {
             effectPositions.add(pos);
         }
 
-        // Step 2: Egg → Mob
         List<ItemEntity> items = server.getEntitiesOfClass(ItemEntity.class, area);
         for (ItemEntity ie : items) {
-            // skip freshly spawned eggs
             CompoundTag pd = ie.getPersistentData();
             if (pd.getBoolean("SoulStoneNewEgg")) {
                 pd.remove("SoulStoneNewEgg");
@@ -128,7 +114,6 @@ public class SoulBindSoulStoneAbility implements IGStoneAbility {
             Item itm = worldStack.getItem();
             if (!(itm instanceof SpawnEggItem se)) continue;
 
-            // resolve mob type
             EntityType<?> mType = se.getType(worldStack.getTag());
             if (mType == null) {
                 var eggId = ForgeRegistries.ITEMS.getKey(itm);
@@ -142,16 +127,15 @@ public class SoulBindSoulStoneAbility implements IGStoneAbility {
             if (mType == null) {
                 if (!warned) {
                     player.displayClientMessage(
-                            Component.literal("A soul-less creature is nearby")                                    .withStyle(Style.EMPTY
-                                    .withItalic(true)
-                                    .withColor(0xD5700E)), true);
+                            Component.literal("A soul-less creature is nearby")
+                                    .withStyle(Style.EMPTY.withItalic(true).withColor(0xD5700E)), true);
                     warned = true;
                 }
                 continue;
             }
 
             BlockPos p = ie.blockPosition();
-            LivingEntity spawned = (LivingEntity)mType.create(server);
+            LivingEntity spawned = (LivingEntity) mType.create(server);
             if (spawned != null) {
                 spawned.moveTo(
                         p.getX() + 0.5, p.getY(), p.getZ() + 0.5,
@@ -159,7 +143,6 @@ public class SoulBindSoulStoneAbility implements IGStoneAbility {
                 );
                 server.addFreshEntity(spawned);
 
-                // consume the egg
                 worldStack.shrink(1);
                 if (worldStack.isEmpty()) {
                     ie.remove(RemovalReason.DISCARDED);
@@ -168,7 +151,6 @@ public class SoulBindSoulStoneAbility implements IGStoneAbility {
             }
         }
 
-        // Step 3: Particles
         for (BlockPos p : effectPositions) {
             server.sendParticles(
                     ModParticles.SOUL_STONE_EFFECT_ONE.get(),
@@ -176,6 +158,8 @@ public class SoulBindSoulStoneAbility implements IGStoneAbility {
                     80, 0.2, 0.3, 0.2, 0.03
             );
         }
+
+        StoneAbilityCooldowns.apply(player, cdItem, "soul", abilityKey());
     }
 
     private ItemStack findSpawnEgg(EntityType<?> type) {
@@ -183,12 +167,10 @@ public class SoulBindSoulStoneAbility implements IGStoneAbility {
         if (key == null) return ItemStack.EMPTY;
         String target = key.getNamespace() + ":" + key.getPath() + "_spawn_egg";
 
-        // direct registry lookup
         var rl = new net.minecraft.resources.ResourceLocation(target);
         if (ForgeRegistries.ITEMS.containsKey(rl)) {
             return new ItemStack(ForgeRegistries.ITEMS.getValue(rl));
         }
-        // scan all eggs
         for (Item itm : ForgeRegistries.ITEMS) {
             if (itm instanceof SpawnEggItem se && se.getType(null) == type) {
                 return new ItemStack(itm);

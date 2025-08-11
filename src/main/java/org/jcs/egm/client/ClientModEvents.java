@@ -4,16 +4,20 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.jcs.egm.client.input.InfinityKeybinds;
+import org.jcs.egm.client.particle.UniversalTintParticle;
+import org.jcs.egm.egm;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
 import org.jcs.egm.holders.StoneHolderItem;
 import org.jcs.egm.network.NetworkHandler;
 import org.jcs.egm.network.OpenGauntletMenuPacket;
 import org.jcs.egm.network.OpenStoneHolderMenuPacket;
 import org.jcs.egm.registry.ModItems;
+import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.StoneItem;
 
 @Mod.EventBusSubscriber(modid = "egm", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
@@ -52,3 +56,4 @@ public class ClientModEvents {
         }
     }
 }
+

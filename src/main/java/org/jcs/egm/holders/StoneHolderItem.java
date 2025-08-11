@@ -19,6 +19,7 @@ import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jcs.egm.stones.IGStoneAbility;
 import org.jcs.egm.stones.StoneAbilityRegistries;
+import org.jcs.egm.stones.StoneAbilityCooldowns;
 
 public class StoneHolderItem extends Item {
     private final String stoneType;
@@ -44,12 +45,22 @@ public class StoneHolderItem extends Item {
 
     /** Puts a (possibly mutated) stone back and updates model predicate bitmask */
     public static void setStone(ItemStack holder, ItemStack inside) {
+        setStone(holder, inside, null);
+    }
+
+    /** Same as setStone(holder, inside) but also transfers cooldown overlay if a player context is available */
+    public static void setStone(ItemStack holder, ItemStack inside, Player actor) {
         if (holder == null || holder.isEmpty()) return;
         ItemStackHandler handler = new ItemStackHandler(1);
         handler.setStackInSlot(0, inside);
         if (!holder.hasTag()) holder.setTag(new CompoundTag());
         holder.getTag().put("Stone", handler.serializeNBT());
         updateStoneBitmaskNBT(holder);
+
+        // If this write is due to an insertion by a player, re-sync any remaining cooldown overlay to this holder.
+        if (actor != null) {
+            StoneAbilityCooldowns.transferOnInsert(actor, holder);
+        }
     }
 
     /** Returns 0 (empty) or 1 (has stone) for predicate */
@@ -109,12 +120,21 @@ public class StoneHolderItem extends Item {
             return InteractionResultHolder.pass(holder);
         }
         IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.getStoneKey(), inside);
-        if (ability != null && ability.canHoldUse()) {
+        if (ability == null) return InteractionResultHolder.pass(holder);
+
+        // Universal guard: blocks if on cooldown (container-independent) and re-syncs overlay to this holder.
+        if (StoneAbilityCooldowns.guardUse(player, inside, this.getStoneKey(), ability)) {
+            return InteractionResultHolder.pass(holder);
+        }
+
+        if (ability.canHoldUse()) {
             player.startUsingItem(hand);
             return InteractionResultHolder.consume(holder);
-        } else if (ability != null && !world.isClientSide) {
+        } else if (!world.isClientSide) {
             ability.activate(world, player, inside);
-            setStone(holder, inside);
+            // Apply container-aware cooldown + player gate using the STONE stack
+            StoneAbilityCooldowns.apply(player, inside, this.getStoneKey(), ability);
+            setStone(holder, inside, player);
             return InteractionResultHolder.success(holder);
         }
         return InteractionResultHolder.pass(holder);
@@ -137,7 +157,7 @@ public class StoneHolderItem extends Item {
         IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.stoneType, inside);
         if (ability != null && ability.canHoldUse()) {
             ability.onUsingTick(world, player, inside, count);
-            setStone(holder, inside);
+            setStone(holder, inside, player);
         }
     }
 
@@ -148,7 +168,9 @@ public class StoneHolderItem extends Item {
         IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.stoneType, inside);
         if (ability != null && ability.canHoldUse()) {
             ability.releaseUsing(world, player, inside, timeLeft);
-            setStone(holder, inside);
+            // Apply container-aware cooldown + player gate at the moment the hold ability "fires"/releases
+            StoneAbilityCooldowns.apply(player, inside, this.getStoneKey(), ability);
+            setStone(holder, inside, player);
         }
     }
 }

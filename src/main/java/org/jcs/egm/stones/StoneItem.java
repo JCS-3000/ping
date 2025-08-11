@@ -13,19 +13,17 @@ import org.jcs.egm.holders.StoneHolderItem;
 
 /**
  * Base class for all Infinity Stones.
- * Now includes cooldown utilities and a common handler for instant/hold abilities.
+ * Uses container-aware, per-player cooldown gating so moving stones between containers
+ * cannot reset their cooldown. Also re-syncs the hotbar overlay to the active container.
  */
 public abstract class StoneItem extends Item {
 
-    public StoneItem(Properties properties) {
-        super(properties);
-    }
+    public StoneItem(Properties properties) { super(properties); }
 
-    // --- Abstract: Each stone must return its key and color ---
     public abstract String getKey();
     public abstract int getColor();
 
-    // --- Universal state detection ---
+    // ---- Location helpers ----
     public static boolean isRawInInventory(Player player, ItemStack stoneStack) {
         if (player == null || stoneStack == null || stoneStack.isEmpty()) return false;
         for (ItemStack invStack : player.getInventory().items) {
@@ -71,11 +69,11 @@ public abstract class StoneItem extends Item {
 
     public static StoneState getStoneState(Player player, ItemStack stoneStack) {
         if (isInGauntlet(player, stoneStack)) return StoneState.GAUNTLET;
-        if (isInHolder(player, stoneStack)) return StoneState.HOLDER;
+        if (isInHolder(player, stoneStack))   return StoneState.HOLDER;
         return StoneState.RAW;
     }
 
-    // --- Universal raw stone behavior: 1 HP every 10 ticks, no knockback ---
+    // ---- Raw stone drawback ----
     @Override
     public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slot, boolean selected) {
         if (!level.isClientSide && entity instanceof Player player) {
@@ -86,7 +84,7 @@ public abstract class StoneItem extends Item {
         super.inventoryTick(stack, level, entity, slot, selected);
     }
 
-    // --- All uses delegate to handleStoneUse (raw-damage shortcut removed) ---
+    // ---- Use / Hold plumbing ----
     @Override
     public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
@@ -94,18 +92,9 @@ public abstract class StoneItem extends Item {
         return this.handleStoneUse(world, player, hand, stack, state);
     }
 
-    // --- Stones can be charged like gauntlet/holder ---
-    @Override
-    public int getUseDuration(ItemStack stack) {
-        return 72000;
-    }
+    @Override public int getUseDuration(ItemStack stack) { return 72000; }
+    @Override public UseAnim getUseAnimation(ItemStack stack) { return UseAnim.BOW; }
 
-    @Override
-    public UseAnim getUseAnimation(ItemStack stack) {
-        return UseAnim.BOW;
-    }
-
-    // --- Forward use-tick and release to the active ability for RAW stones ---
     @Override
     public void onUseTick(Level world, LivingEntity entity, ItemStack stack, int count) {
         if (!(entity instanceof Player player)) return;
@@ -121,22 +110,38 @@ public abstract class StoneItem extends Item {
         IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.getKey(), stack);
         if (ability != null && ability.canHoldUse()) {
             ability.releaseUsing(world, player, stack, timeLeft);
-            // NOTE: Cooldown for hold abilities should be applied by the ability
-            // at the exact moment it "fires", e.g.:
-            // StoneAbilityCooldowns.applyFromStack(player, stack, getKey(), ability);
         }
     }
 
-    // --- Abstract hook for each stone’s actual ability dispatch ---
-    protected abstract InteractionResultHolder<ItemStack> handleStoneUse(Level world, Player player, InteractionHand hand, ItemStack stack, StoneState state);
+    // ---- Dispatcher with persistent gate + overlay re-sync ----
+    protected final InteractionResultHolder<ItemStack> handleAbilityWithCooldown(
+            Level world, Player player, InteractionHand hand, ItemStack stack, StoneState state) {
 
-    /** Override if your stone uses on-tick charging */
-    public void onUseTick(Level world, Player player, ItemStack stack, int count) {}
+        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.getKey(), stack);
+        if (ability == null) return InteractionResultHolder.pass(stack);
 
-    /** Override if your stone needs a release action */
-    public void releaseUsing(ItemStack stack, Level world, Player player, int timeLeft) {}
+        // BLOCK if cooling (and re-sync overlay to the current container)
+        if (StoneAbilityCooldowns.guardUse(player, stack, getKey(), ability)) {
+            return InteractionResultHolder.pass(stack);
+        }
 
-    /** Opens the ability‐selection GUI */
+        if (ability.canHoldUse()) {
+            player.startUsingItem(hand);
+            return InteractionResultHolder.consume(stack);
+        }
+
+        if (!world.isClientSide) {
+            ability.activate(world, player, stack);
+            // Apply container-aware cooldown + player gate using the stone stack
+            StoneAbilityCooldowns.apply(player, stack, getKey(), ability);
+            return InteractionResultHolder.success(stack);
+        }
+        return InteractionResultHolder.pass(stack);
+    }
+
+    protected abstract InteractionResultHolder<ItemStack> handleStoneUse(
+            Level world, Player player, InteractionHand hand, ItemStack stack, StoneState state);
+
     public static void openStoneAbilityMenu(ItemStack stack, InteractionHand hand, String stoneKey) {
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
         if (mc == null) return;
@@ -144,49 +149,5 @@ public abstract class StoneItem extends Item {
         if (names == null || names.isEmpty()) return;
         int idx = stack.hasTag() ? stack.getTag().getInt("AbilityIndex") : 0;
         mc.setScreen(new org.jcs.egm.client.StoneAbilityMenuScreen(stack, hand, names, idx));
-    }
-
-    // ========================================================================
-    // Cooldown helpers + a common dispatcher you can call from handleStoneUse()
-    // ========================================================================
-
-    /** True if the vanilla cooldown overlay is active for this item. */
-    protected final boolean isOnCooldown(Player player) {
-        return StoneAbilityCooldowns.isCooling(player, this);
-    }
-
-    /** Apply cooldown for an instant ability (uses this item for the overlay). */
-    protected final void applyInstantCooldown(Player player, IGStoneAbility ability) {
-        StoneAbilityCooldowns.apply(player, this, getKey(), ability);
-    }
-
-    /**
-     * Common dispatcher:
-     * - Blocks use if this item is cooling.
-     * - For hold abilities: only checks cooldown and starts using; the ability must call
-     *   StoneAbilityCooldowns.applyFromStack(...) when it actually fires.
-     * - For instant abilities: activates on server and applies cooldown immediately.
-     */
-    protected final InteractionResultHolder<ItemStack> handleAbilityWithCooldown(Level world, Player player, InteractionHand hand, ItemStack stack, IGStoneAbility ability) {
-        if (ability == null) return InteractionResultHolder.pass(stack);
-
-        // If any ability is attempted while this item is on cooldown, block.
-        if (isOnCooldown(player)) {
-            return InteractionResultHolder.pass(stack);
-        }
-
-        if (ability.canHoldUse()) {
-            // Start using; cooldown applied later by the ability when it fires.
-            player.startUsingItem(hand);
-            return InteractionResultHolder.consume(stack);
-        }
-
-        // Instant ability: run server-side & apply cooldown immediately
-        if (!world.isClientSide) {
-            ability.activate(world, player, stack);
-            applyInstantCooldown(player, ability);
-            return InteractionResultHolder.success(stack);
-        }
-        return InteractionResultHolder.pass(stack);
     }
 }

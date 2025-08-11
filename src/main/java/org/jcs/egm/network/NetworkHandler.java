@@ -69,13 +69,22 @@ public class NetworkHandler {
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
 
-        // 🔽 NEW: Camera shake (server → client)
+        // Camera shake (server → client)
         INSTANCE.registerMessage(
                 id++,
                 org.jcs.egm.network.packet.ShakeCameraPacket.class,
                 org.jcs.egm.network.packet.ShakeCameraPacket::encode,
                 org.jcs.egm.network.packet.ShakeCameraPacket::decode,
                 org.jcs.egm.network.packet.ShakeCameraPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+        // MORPH
+        INSTANCE.registerMessage(
+                id++,
+                org.jcs.egm.stones.stone_reality.S2CSyncMorph.class,
+                org.jcs.egm.stones.stone_reality.S2CSyncMorph::encode,
+                org.jcs.egm.stones.stone_reality.S2CSyncMorph::decode,
+                org.jcs.egm.stones.stone_reality.S2CSyncMorph::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
     }

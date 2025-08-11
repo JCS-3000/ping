@@ -18,6 +18,7 @@ import net.minecraftforge.items.ItemStackHandler;
 import org.jcs.egm.registry.ModItems;
 import org.jcs.egm.stones.IGStoneAbility;
 import org.jcs.egm.stones.StoneAbilityRegistries;
+import org.jcs.egm.stones.StoneAbilityCooldowns;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -53,14 +54,24 @@ public class InfinityGauntletItem extends Item {
         ItemStack stoneStack = handler.getStackInSlot(idx);
         if (!stoneStack.isEmpty()) {
             IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneKey, stoneStack);
-            if (ability != null && ability.canHoldUse()) {
+            if (ability == null) return InteractionResultHolder.pass(stack);
+
+            // Universal guard: blocks if on cooldown (container-independent) and re-syncs overlay to gauntlet.
+            if (StoneAbilityCooldowns.guardUse(player, stoneStack, stoneKey, ability)) {
+                return InteractionResultHolder.pass(stack);
+            }
+
+            if (ability.canHoldUse()) {
                 player.startUsingItem(hand);
                 return InteractionResultHolder.consume(stack);
-            } else if (ability != null && !level.isClientSide) {
+            } else if (!level.isClientSide) {
                 ability.activate(level, player, stoneStack);
-                // Make sure the stone NBT is put back (for cooldowns, etc.)
+                // Apply container-aware cooldown + player gate using the STONE stack
+                StoneAbilityCooldowns.apply(player, stoneStack, stoneKey, ability);
+                // Make sure the stone NBT is put back (if mutated) and bitmask is updated
                 handler.setStackInSlot(idx, stoneStack);
                 stack.getTag().put("Stones", handler.serializeNBT());
+                updateStonesBitmaskNBT(stack);
                 return InteractionResultHolder.success(stack);
             }
         }
@@ -110,13 +121,31 @@ public class InfinityGauntletItem extends Item {
                 IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneKey, stoneStack);
                 if (ability != null && ability.canHoldUse()) {
                     ability.releaseUsing(level, player, stoneStack, timeLeft);
+                    // Apply container-aware cooldown + player gate at the moment the hold ability "fires"/releases
+                    StoneAbilityCooldowns.apply(player, stoneStack, stoneKey, ability);
                     handler.setStackInSlot(idx, stoneStack);
                     stack.getTag().put("Stones", handler.serializeNBT());
+                    updateStonesBitmaskNBT(stack);
                 }
             }
         }
     }
     // --------------------------------------------------------------------
+
+    /** Helper to set a stone into a slot and automatically transfer any remaining cooldown overlay to this gauntlet. */
+    public static void setStoneStack(ItemStack gauntlet, int slot, ItemStack stone, Player actor) {
+        ItemStackHandler handler = new ItemStackHandler(6);
+        if (gauntlet.hasTag() && gauntlet.getTag().contains("Stones")) {
+            handler.deserializeNBT(gauntlet.getTag().getCompound("Stones"));
+        }
+        handler.setStackInSlot(slot, stone);
+        gauntlet.getOrCreateTag().put("Stones", handler.serializeNBT());
+        updateStonesBitmaskNBT(gauntlet);
+
+        if (actor != null) {
+            StoneAbilityCooldowns.transferOnInsert(actor, gauntlet);
+        }
+    }
 
     public static ItemStack getStoneStack(ItemStack gauntlet, int slot) {
         ItemStackHandler handler = new ItemStackHandler(6);
@@ -181,10 +210,10 @@ public class InfinityGauntletItem extends Item {
         int bitmask = 0;
         if (!handler.getStackInSlot(0).isEmpty()) bitmask |= 32;      // Time
         if (!handler.getStackInSlot(1).isEmpty()) bitmask |= 16;      // Power
-        if (!handler.getStackInSlot(2).isEmpty()) bitmask |= 8;      // Space
-        if (!handler.getStackInSlot(3).isEmpty()) bitmask |= 4;      // Reality
-        if (!handler.getStackInSlot(4).isEmpty()) bitmask |= 2;     // Soul
-        if (!handler.getStackInSlot(5).isEmpty()) bitmask |= 1;     // Mind
+        if (!handler.getStackInSlot(2).isEmpty()) bitmask |= 8;       // Space
+        if (!handler.getStackInSlot(3).isEmpty()) bitmask |= 4;       // Reality
+        if (!handler.getStackInSlot(4).isEmpty()) bitmask |= 2;       // Soul
+        if (!handler.getStackInSlot(5).isEmpty()) bitmask |= 1;       // Mind
         return bitmask;
     }
 

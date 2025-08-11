@@ -8,13 +8,13 @@ import java.util.List;
 
 public class RealityStoneAbilityRegistry {
     // Register all abilities for the reality stone
+    public static final IGStoneAbility WILLED_CHAOS = new WilledChaosRealityStoneAbility();
     public static final IGStoneAbility METAMORPHOSIS = new MetamorphosisRealityStoneAbility();
-    // public static final IGStoneAbility ANOTHER = new AnotherRealityStoneAbility();
 
     private static final List<IGStoneAbility> ABILITIES = new ArrayList<>();
     static {
+        ABILITIES.add(WILLED_CHAOS);
         ABILITIES.add(METAMORPHOSIS);
-        // ABILITIES.add(ANOTHER);
     }
 
     public static List<IGStoneAbility> getAbilities() {
@@ -23,6 +23,7 @@ public class RealityStoneAbilityRegistry {
 
     public static List<Component> getAbilityNames() {
         List<Component> names = new ArrayList<>();
+        names.add(Component.literal("Willed Chaos"));
         names.add(Component.literal("Metamorphosis"));
         // names.add(Component.literal("Another Ability"));
         return names;

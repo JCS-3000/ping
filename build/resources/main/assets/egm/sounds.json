@@ -6,6 +6,9 @@
   "gauntlet_assembled": { "category": "players", "sounds": [{ "name": "egm:gauntlet_assembled" }] },
   "snap": { "category": "players", "sounds": [{ "name": "egm:snap" }] },
   "dusted": { "category": "players", "sounds": [{ "name": "egm:dusted" }] },
-  "reality_stone_beam": { "category": "players", "sounds": [{ "name": "egm:reality_stone_beam" }] },
-  "reality_stone_change": { "category": "players", "sounds": [{ "name": "egm:reality_stone_change" }] }
+  "time_stone_charging": { "category": "players", "sounds": [{ "name": "egm:time_stone_charging" }] },
+  "how_strange": { "category": "players", "sounds": [{ "name": "egm:how_strange" }] },
+  "reality_stone_firing": { "category": "players", "sounds": [{ "name": "egm:reality_stone_firing" }] },
+  "reality_stone_change": { "category": "players", "sounds": [{ "name": "egm:reality_stone_change" }] },
+  "universal_twinkle": { "category": "players", "sounds": [{ "name": "egm:universal_twinkle" }] }
 }

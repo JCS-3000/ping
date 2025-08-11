@@ -5,6 +5,18 @@
 	#Entities the Reality Stone will never create. Format: modid:entity_name
 	reality_stone_entity_blacklist = ["minecraft:ender_dragon", "minecraft:wither"]
 
+	[RealityStone.Metamorphosis]
+		#Entities that grant flight when morphed. Format: modid:entity_name
+		fly_entities = ["minecraft:bat", "minecraft:bee", "minecraft:parrot", "minecraft:phantom", "minecraft:ghast", "minecraft:blaze", "minecraft:vex", "minecraft:allay", "minecraft:wither", "minecraft:ender_dragon"]
+		#Entities that grant strong swimming/water breathing when morphed. Format: modid:entity_name
+		swim_entities = ["minecraft:squid", "minecraft:glow_squid", "minecraft:axolotl", "minecraft:dolphin", "minecraft:cod", "minecraft:salmon", "minecraft:pufferfish", "minecraft:tropical_fish", "minecraft:turtle", "minecraft:guardian", "minecraft:elder_guardian"]
+		#Entities that grant fire resistance when morphed. Format: modid:entity_name
+		fireproof_entities = ["minecraft:blaze", "minecraft:wither", "minecraft:ghast", "minecraft:magma_cube", "minecraft:strider"]
+		#Entities that grant slow falling when morphed. Format: modid:entity_name
+		slowfall_entities = ["minecraft:chicken"]
+		#Entities that grant wall-climb when morphed. Format: modid:entity_name
+		spiderclimb_entities = ["minecraft:spider", "minecraft:cave_spider"]
+
 [MindStone]
 	#Entities that cannot be possessed by the Mind Stone. Format: modid:entity_name
 	mind_stone_entity_blacklist = ["minecraft:ender_dragon", "minecraft:wither", "minecraft:warden"]

@@ -7,11 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TimeStoneAbilityRegistry {
-    public static final IGStoneAbility PACIFY = new PacifyTimeStoneAbility();
+    public static final IGStoneAbility PACIFY  = new PacifyTimeStoneAbility();
+    public static final IGStoneAbility BUBBLE  = new TimeBubbleTimeStoneAbility();
+    public static final IGStoneAbility FREEZE  = new TimeFreezeTimeStoneAbility();
 
     private static final List<IGStoneAbility> ABILITIES = new ArrayList<>();
     static {
-        ABILITIES.add(PACIFY);
+        ABILITIES.add(PACIFY);        // index 0
+        ABILITIES.add(BUBBLE);  // index 1
+        ABILITIES.add(FREEZE);
+        // index 2, 3... (for 4 total)
     }
 
     public static List<IGStoneAbility> getAbilities() {
@@ -20,7 +25,9 @@ public class TimeStoneAbilityRegistry {
 
     public static List<Component> getAbilityNames() {
         List<Component> names = new ArrayList<>();
-        names.add(Component.literal("Pacify"));
+        names.add(Component.literal("Pacify"));             // 0
+        names.add(Component.literal("Time Bubble"));
+        names.add(Component.literal("Strange Magicks"));// 1 (matches ABILITIES)
         return names;
     }
 

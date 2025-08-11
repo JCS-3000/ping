@@ -136,38 +136,36 @@ Adding Libraries to Inheritance
 Reading Input: C:\Users\JCS\IdeaProjects\end-game-mod\build\libs\egm-1.0.0.jar
 Adding input to inheritance map
 Processing entries
-Conflicting propagated mapping for org/jcs/egm/client/particle/PowerStoneEffectTwo/tick()V from net/minecraft/client/particle/Particle/tick()V: tick -> m_5989_
 Conflicting propagated mapping for org/jcs/egm/client/particle/PowerStoneEffectOne/tick()V from net/minecraft/client/particle/Particle/tick()V: tick -> m_5989_
-Conflicting propagated mapping for org/jcs/egm/client/particle/PowerStoneEffectTwo/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType; from net/minecraft/client/particle/Particle/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType;: getRenderType -> m_7556_
 Conflicting propagated mapping for org/jcs/egm/client/particle/PowerStoneEffectOne/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType; from net/minecraft/client/particle/Particle/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType;: getRenderType -> m_7556_
-Conflicting propagated mapping for org/jcs/egm/client/particle/PowerStoneEffectTwo$Provider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle; from net/minecraft/client/particle/ParticleProvider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle;: createParticle -> m_6966_
 Conflicting propagated mapping for org/jcs/egm/client/particle/PowerStoneEffectOne$Provider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle; from net/minecraft/client/particle/ParticleProvider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle;: createParticle -> m_6966_
-Conflicting propagated mapping for org/jcs/egm/client/particle/RealityStoneEffectOne$Provider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle; from net/minecraft/client/particle/ParticleProvider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle;: createParticle -> m_6966_
-Conflicting propagated mapping for org/jcs/egm/client/particle/RealityStoneEffectOne/tick()V from net/minecraft/client/particle/Particle/tick()V: tick -> m_5989_
-Conflicting propagated mapping for org/jcs/egm/client/particle/RealityStoneEffectOne/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType; from net/minecraft/client/particle/Particle/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType;: getRenderType -> m_7556_
 Conflicting propagated mapping for org/jcs/egm/client/InfinityGauntletScreen/isPauseScreen()Z from net/minecraft/client/gui/screens/inventory/AbstractContainerScreen/isPauseScreen()Z: isPauseScreen -> m_7043_
 Conflicting propagated mapping for org/jcs/egm/client/InfinityGauntletScreen/render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V from net/minecraft/client/gui/screens/inventory/AbstractContainerScreen/render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V: render -> m_88315_
 Conflicting propagated mapping for org/jcs/egm/client/InfinityGauntletScreen/renderLabels(Lnet/minecraft/client/gui/GuiGraphics;II)V from net/minecraft/client/gui/screens/inventory/AbstractContainerScreen/renderLabels(Lnet/minecraft/client/gui/GuiGraphics;II)V: renderLabels -> m_280003_
 Conflicting propagated mapping for org/jcs/egm/client/InfinityGauntletScreen/renderBg(Lnet/minecraft/client/gui/GuiGraphics;FII)V from net/minecraft/client/gui/screens/inventory/AbstractContainerScreen/renderBg(Lnet/minecraft/client/gui/GuiGraphics;FII)V: renderBg -> m_7286_
+Conflicting propagated mapping for org/jcs/egm/client/particle/RealityStoneEffectOne$Provider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle; from net/minecraft/client/particle/ParticleProvider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle;: createParticle -> m_6966_
 Conflicting propagated mapping for org/jcs/egm/gauntlet/InfinityGauntletMenu/removed(Lnet/minecraft/world/entity/player/Player;)V from net/minecraft/world/inventory/AbstractContainerMenu/removed(Lnet/minecraft/world/entity/player/Player;)V: removed -> m_6877_
 Conflicting propagated mapping for org/jcs/egm/gauntlet/InfinityGauntletMenu/stillValid(Lnet/minecraft/world/entity/player/Player;)Z from net/minecraft/world/inventory/AbstractContainerMenu/stillValid(Lnet/minecraft/world/entity/player/Player;)Z: stillValid -> m_6875_
 Conflicting propagated mapping for org/jcs/egm/gauntlet/InfinityGauntletMenu/quickMoveStack(Lnet/minecraft/world/entity/player/Player;I)Lnet/minecraft/world/item/ItemStack; from net/minecraft/world/inventory/AbstractContainerMenu/quickMoveStack(Lnet/minecraft/world/entity/player/Player;I)Lnet/minecraft/world/item/ItemStack;: quickMoveStack -> m_7648_
-Conflicting propagated mapping for org/jcs/egm/holders/EyeOfAgamottoHolderItem/getUseAnimation(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/UseAnim; from net/minecraft/world/item/Item/getUseAnimation(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/UseAnim;: getUseAnimation -> m_6164_
-Conflicting propagated mapping for org/jcs/egm/holders/EyeOfAgamottoHolderItem/use(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder; from net/minecraft/world/item/ArmorItem/use(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder;: use -> m_7203_
-Conflicting propagated mapping for org/jcs/egm/holders/EyeOfAgamottoHolderItem/getUseDuration(Lnet/minecraft/world/item/ItemStack;)I from net/minecraft/world/item/Item/getUseDuration(Lnet/minecraft/world/item/ItemStack;)I: getUseDuration -> m_8105_
-Conflicting propagated mapping for org/jcs/egm/holders/EyeOfAgamottoHolderItem/isValidRepairItem(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)Z from net/minecraft/world/item/ArmorItem/isValidRepairItem(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)Z: isValidRepairItem -> m_6832_
-Conflicting propagated mapping for org/jcs/egm/holders/EyeOfAgamottoHolderItem/onUseTick(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;I)V from net/minecraft/world/item/Item/onUseTick(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;I)V: onUseTick -> m_5929_
-Conflicting propagated mapping for org/jcs/egm/holders/EyeOfAgamottoHolderItem/releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)V from net/minecraft/world/item/Item/releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)V: releaseUsing -> m_5551_
-Conflicting propagated mapping for org/jcs/egm/holders/EyeOfAgamottoHolderItem/canBeHurtBy(Lnet/minecraft/world/damagesource/DamageSource;)Z from net/minecraft/world/item/Item/canBeHurtBy(Lnet/minecraft/world/damagesource/DamageSource;)Z: canBeHurtBy -> m_41386_
-Conflicting propagated mapping for org/jcs/egm/holders/EyeOfAgamottoHolderItem/canBeDepleted()Z from net/minecraft/world/item/Item/canBeDepleted()Z: canBeDepleted -> m_41465_
+Conflicting propagated mapping for org/jcs/egm/client/particle/RealityStoneEffectOne/tick()V from net/minecraft/client/particle/Particle/tick()V: tick -> m_5989_
+Conflicting propagated mapping for org/jcs/egm/client/particle/RealityStoneEffectOne/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType; from net/minecraft/client/particle/Particle/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType;: getRenderType -> m_7556_
 Conflicting propagated mapping for org/jcs/egm/client/particle/TimeStoneEffectOne$Provider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle; from net/minecraft/client/particle/ParticleProvider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle;: createParticle -> m_6966_
 Conflicting propagated mapping for org/jcs/egm/client/particle/TimeStoneEffectOne/tick()V from net/minecraft/client/particle/Particle/tick()V: tick -> m_5989_
 Conflicting propagated mapping for org/jcs/egm/client/particle/TimeStoneEffectOne/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType; from net/minecraft/client/particle/Particle/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType;: getRenderType -> m_7556_
 Conflicting propagated mapping for org/jcs/egm/client/particle/SoulStoneEffectOne$Provider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle; from net/minecraft/client/particle/ParticleProvider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle;: createParticle -> m_6966_
 Conflicting propagated mapping for org/jcs/egm/client/particle/SoulStoneEffectOne/tick()V from net/minecraft/client/particle/Particle/tick()V: tick -> m_5989_
 Conflicting propagated mapping for org/jcs/egm/client/particle/SoulStoneEffectOne/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType; from net/minecraft/client/particle/Particle/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType;: getRenderType -> m_7556_
+Conflicting propagated mapping for org/jcs/egm/client/particle/UniversalTintParticle$Provider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle; from net/minecraft/client/particle/ParticleProvider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle;: createParticle -> m_6966_
+Conflicting propagated mapping for org/jcs/egm/client/particle/UniversalTintParticle/getLightColor(F)I from net/minecraft/client/particle/Particle/getLightColor(F)I: getLightColor -> m_6355_
+Conflicting propagated mapping for org/jcs/egm/client/particle/UniversalTintParticle/tick()V from net/minecraft/client/particle/Particle/tick()V: tick -> m_5989_
+Conflicting propagated mapping for org/jcs/egm/client/particle/UniversalTintParticle/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType; from net/minecraft/client/particle/Particle/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType;: getRenderType -> m_7556_
+Conflicting propagated mapping for org/jcs/egm/client/particle/PowerStoneEffectTwo$Provider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle; from net/minecraft/client/particle/ParticleProvider/createParticle(Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)Lnet/minecraft/client/particle/Particle;: createParticle -> m_6966_
+Conflicting propagated mapping for org/jcs/egm/client/particle/PowerStoneEffectTwo/tick()V from net/minecraft/client/particle/Particle/tick()V: tick -> m_5989_
+Conflicting propagated mapping for org/jcs/egm/client/particle/PowerStoneEffectTwo/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType; from net/minecraft/client/particle/Particle/getRenderType()Lnet/minecraft/client/particle/ParticleRenderType;: getRenderType -> m_7556_
 Conflicting propagated mapping for org/jcs/egm/client/render/PowerStoneLightningRenderer/getTextureLocation(Lnet/minecraft/world/entity/Entity;)Lnet/minecraft/resources/ResourceLocation; from net/minecraft/client/renderer/entity/EntityRenderer/getTextureLocation(Lnet/minecraft/world/entity/Entity;)Lnet/minecraft/resources/ResourceLocation;: getTextureLocation -> m_5478_
 Conflicting propagated mapping for org/jcs/egm/client/render/PowerStoneLightningRenderer/render(Lnet/minecraft/world/entity/Entity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V from net/minecraft/client/renderer/entity/EntityRenderer/render(Lnet/minecraft/world/entity/Entity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V: render -> m_7392_
+Conflicting propagated mapping for org/jcs/egm/client/render/TimeBubbleFieldRenderer/getTextureLocation(Lnet/minecraft/world/entity/Entity;)Lnet/minecraft/resources/ResourceLocation; from net/minecraft/client/renderer/entity/EntityRenderer/getTextureLocation(Lnet/minecraft/world/entity/Entity;)Lnet/minecraft/resources/ResourceLocation;: getTextureLocation -> m_5478_
+Conflicting propagated mapping for org/jcs/egm/client/render/TimeBubbleFieldRenderer/render(Lnet/minecraft/world/entity/Entity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V from net/minecraft/client/renderer/entity/EntityRenderer/render(Lnet/minecraft/world/entity/Entity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V: render -> m_7392_
 Conflicting propagated mapping for org/jcs/egm/client/StoneAbilityMenuScreen/keyPressed(III)Z from net/minecraft/client/gui/screens/Screen/keyPressed(III)Z: keyPressed -> m_7933_
 Conflicting propagated mapping for org/jcs/egm/client/StoneAbilityMenuScreen/isPauseScreen()Z from net/minecraft/client/gui/screens/Screen/isPauseScreen()Z: isPauseScreen -> m_7043_
 Conflicting propagated mapping for org/jcs/egm/client/StoneAbilityMenuScreen/render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V from net/minecraft/client/gui/screens/Screen/render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V: render -> m_88315_
@@ -182,19 +180,6 @@ Conflicting propagated mapping for org/jcs/egm/client/StoneHolderScreen/renderBg
 Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu/removed(Lnet/minecraft/world/entity/player/Player;)V from net/minecraft/world/inventory/AbstractContainerMenu/removed(Lnet/minecraft/world/entity/player/Player;)V: removed -> m_6877_
 Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu/stillValid(Lnet/minecraft/world/entity/player/Player;)Z from net/minecraft/world/inventory/AbstractContainerMenu/stillValid(Lnet/minecraft/world/entity/player/Player;)Z: stillValid -> m_6875_
 Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu/quickMoveStack(Lnet/minecraft/world/entity/player/Player;I)Lnet/minecraft/world/item/ItemStack; from net/minecraft/world/inventory/AbstractContainerMenu/quickMoveStack(Lnet/minecraft/world/entity/player/Player;I)Lnet/minecraft/world/item/ItemStack;: quickMoveStack -> m_7648_
-Conflicting propagated mapping for software/bernie/geckolib/renderer/GeoArmorRenderer/renderToBuffer(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;IIFFFF)V from net/minecraft/client/model/AgeableListModel/renderToBuffer(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;IIFFFF)V: renderToBuffer -> m_7695_
-Conflicting propagated mapping for software/bernie/geckolib/renderer/GeoArmorRenderer/setAllVisible(Z)V from net/minecraft/client/model/HumanoidModel/setAllVisible(Z)V: setAllVisible -> m_8009_
-Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/codec()Lcom/mojang/serialization/Codec; from net/minecraft/world/level/chunk/ChunkGenerator/codec()Lcom/mojang/serialization/Codec;: codec -> m_6909_
-Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/spawnOriginalMobs(Lnet/minecraft/server/level/WorldGenRegion;)V from net/minecraft/world/level/chunk/ChunkGenerator/spawnOriginalMobs(Lnet/minecraft/server/level/WorldGenRegion;)V: spawnOriginalMobs -> m_6929_
-Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/getBaseColumn(IILnet/minecraft/world/level/LevelHeightAccessor;Lnet/minecraft/world/level/levelgen/RandomState;)Lnet/minecraft/world/level/NoiseColumn; from net/minecraft/world/level/chunk/ChunkGenerator/getBaseColumn(IILnet/minecraft/world/level/LevelHeightAccessor;Lnet/minecraft/world/level/levelgen/RandomState;)Lnet/minecraft/world/level/NoiseColumn;: getBaseColumn -> m_214184_
-Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/fillFromNoise(Ljava/util/concurrent/Executor;Lnet/minecraft/world/level/levelgen/blending/Blender;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/chunk/ChunkAccess;)Ljava/util/concurrent/CompletableFuture; from net/minecraft/world/level/chunk/ChunkGenerator/fillFromNoise(Ljava/util/concurrent/Executor;Lnet/minecraft/world/level/levelgen/blending/Blender;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/chunk/ChunkAccess;)Ljava/util/concurrent/CompletableFuture;: fillFromNoise -> m_213974_
-Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/applyCarvers(Lnet/minecraft/server/level/WorldGenRegion;JLnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/biome/BiomeManager;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/chunk/ChunkAccess;Lnet/minecraft/world/level/levelgen/GenerationStep$Carving;)V from net/minecraft/world/level/chunk/ChunkGenerator/applyCarvers(Lnet/minecraft/server/level/WorldGenRegion;JLnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/biome/BiomeManager;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/chunk/ChunkAccess;Lnet/minecraft/world/level/levelgen/GenerationStep$Carving;)V: applyCarvers -> m_213679_
-Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/getMinY()I from net/minecraft/world/level/chunk/ChunkGenerator/getMinY()I: getMinY -> m_142062_
-Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/getSeaLevel()I from net/minecraft/world/level/chunk/ChunkGenerator/getSeaLevel()I: getSeaLevel -> m_6337_
-Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/addDebugScreenInfo(Ljava/util/List;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/core/BlockPos;)V from net/minecraft/world/level/chunk/ChunkGenerator/addDebugScreenInfo(Ljava/util/List;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/core/BlockPos;)V: addDebugScreenInfo -> m_213600_
-Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/buildSurface(Lnet/minecraft/server/level/WorldGenRegion;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/chunk/ChunkAccess;)V from net/minecraft/world/level/chunk/ChunkGenerator/buildSurface(Lnet/minecraft/server/level/WorldGenRegion;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/chunk/ChunkAccess;)V: buildSurface -> m_214194_
-Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/getGenDepth()I from net/minecraft/world/level/chunk/ChunkGenerator/getGenDepth()I: getGenDepth -> m_6331_
-Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/getBaseHeight(IILnet/minecraft/world/level/levelgen/Heightmap$Types;Lnet/minecraft/world/level/LevelHeightAccessor;Lnet/minecraft/world/level/levelgen/RandomState;)I from net/minecraft/world/level/chunk/ChunkGenerator/getBaseHeight(IILnet/minecraft/world/level/levelgen/Heightmap$Types;Lnet/minecraft/world/level/LevelHeightAccessor;Lnet/minecraft/world/level/levelgen/RandomState;)I: getBaseHeight -> m_214096_
 Conflicting propagated mapping for org/jcs/egm/gauntlet/InfinityGauntletItem/getUseAnimation(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/UseAnim; from net/minecraft/world/item/Item/getUseAnimation(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/UseAnim;: getUseAnimation -> m_6164_
 Conflicting propagated mapping for org/jcs/egm/gauntlet/InfinityGauntletItem/use(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder; from net/minecraft/world/item/Item/use(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder;: use -> m_7203_
 Conflicting propagated mapping for org/jcs/egm/gauntlet/InfinityGauntletItem/getUseDuration(Lnet/minecraft/world/item/ItemStack;)I from net/minecraft/world/item/Item/getUseDuration(Lnet/minecraft/world/item/ItemStack;)I: getUseDuration -> m_8105_
@@ -206,13 +191,37 @@ Conflicting propagated mapping for org/jcs/egm/stones/StoneItem/use(Lnet/minecra
 Conflicting propagated mapping for org/jcs/egm/stones/StoneItem/getUseDuration(Lnet/minecraft/world/item/ItemStack;)I from net/minecraft/world/item/Item/getUseDuration(Lnet/minecraft/world/item/ItemStack;)I: getUseDuration -> m_8105_
 Conflicting propagated mapping for org/jcs/egm/stones/StoneItem/onUseTick(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;I)V from net/minecraft/world/item/Item/onUseTick(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;I)V: onUseTick -> m_5929_
 Conflicting propagated mapping for org/jcs/egm/stones/StoneItem/releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)V from net/minecraft/world/item/Item/releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)V: releaseUsing -> m_5551_
-Conflicting propagated mapping for org/jcs/egm/stones/StoneItem/inventoryTick(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;IZ)V from net/minecraft/world/item/Item/inventoryTick(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;IZ)V: inventoryTick -> m_6883_
 Conflicting propagated mapping for org/jcs/egm/entity/PowerStoneLightningEntity/readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V from net/minecraft/world/entity/Entity/readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V: readAdditionalSaveData -> m_7378_
+Conflicting propagated mapping for org/jcs/egm/stones/StoneItem/inventoryTick(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;IZ)V from net/minecraft/world/item/Item/inventoryTick(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;IZ)V: inventoryTick -> m_6883_
+Conflicting propagated mapping for org/jcs/egm/entity/TimeBubbleFieldEntity/readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V from net/minecraft/world/entity/Entity/readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V: readAdditionalSaveData -> m_7378_
 Conflicting propagated mapping for org/jcs/egm/entity/PowerStoneLightningEntity/tick()V from net/minecraft/world/entity/Entity/tick()V: tick -> m_8119_
+Conflicting propagated mapping for org/jcs/egm/entity/TimeBubbleFieldEntity/tick()V from net/minecraft/world/entity/Entity/tick()V: tick -> m_8119_
 Conflicting propagated mapping for org/jcs/egm/entity/PowerStoneLightningEntity/getAddEntityPacket()Lnet/minecraft/network/protocol/Packet; from net/minecraft/world/entity/Entity/getAddEntityPacket()Lnet/minecraft/network/protocol/Packet;: getAddEntityPacket -> m_5654_
 Conflicting propagated mapping for org/jcs/egm/entity/PowerStoneLightningEntity/defineSynchedData()V from net/minecraft/world/entity/Entity/defineSynchedData()V: defineSynchedData -> m_8097_
 Conflicting propagated mapping for org/jcs/egm/entity/PowerStoneLightningEntity/addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V from net/minecraft/world/entity/Entity/addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V: addAdditionalSaveData -> m_7380_
+Conflicting propagated mapping for org/jcs/egm/entity/TimeBubbleFieldEntity/defineSynchedData()V from net/minecraft/world/entity/Entity/defineSynchedData()V: defineSynchedData -> m_8097_
+Conflicting propagated mapping for org/jcs/egm/entity/TimeBubbleFieldEntity/addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V from net/minecraft/world/entity/Entity/addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V: addAdditionalSaveData -> m_7380_
 Conflicting propagated mapping for net/minecraft/world/entity/LivingEntity/lambda$addAdditionalSaveData$3(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/nbt/Tag;)V from net/minecraft/world/entity/player/Player/lambda$addAdditionalSaveData$3(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/nbt/Tag;)V: lambda$addAdditionalSaveData$3 -> m_219754_
+Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/codec()Lcom/mojang/serialization/Codec; from net/minecraft/world/level/chunk/ChunkGenerator/codec()Lcom/mojang/serialization/Codec;: codec -> m_6909_
+Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/spawnOriginalMobs(Lnet/minecraft/server/level/WorldGenRegion;)V from net/minecraft/world/level/chunk/ChunkGenerator/spawnOriginalMobs(Lnet/minecraft/server/level/WorldGenRegion;)V: spawnOriginalMobs -> m_6929_
+Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/getBaseColumn(IILnet/minecraft/world/level/LevelHeightAccessor;Lnet/minecraft/world/level/levelgen/RandomState;)Lnet/minecraft/world/level/NoiseColumn; from net/minecraft/world/level/chunk/ChunkGenerator/getBaseColumn(IILnet/minecraft/world/level/LevelHeightAccessor;Lnet/minecraft/world/level/levelgen/RandomState;)Lnet/minecraft/world/level/NoiseColumn;: getBaseColumn -> m_214184_
+Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/fillFromNoise(Ljava/util/concurrent/Executor;Lnet/minecraft/world/level/levelgen/blending/Blender;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/chunk/ChunkAccess;)Ljava/util/concurrent/CompletableFuture; from net/minecraft/world/level/chunk/ChunkGenerator/fillFromNoise(Ljava/util/concurrent/Executor;Lnet/minecraft/world/level/levelgen/blending/Blender;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/chunk/ChunkAccess;)Ljava/util/concurrent/CompletableFuture;: fillFromNoise -> m_213974_
+Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/applyCarvers(Lnet/minecraft/server/level/WorldGenRegion;JLnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/biome/BiomeManager;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/chunk/ChunkAccess;Lnet/minecraft/world/level/levelgen/GenerationStep$Carving;)V from net/minecraft/world/level/chunk/ChunkGenerator/applyCarvers(Lnet/minecraft/server/level/WorldGenRegion;JLnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/biome/BiomeManager;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/chunk/ChunkAccess;Lnet/minecraft/world/level/levelgen/GenerationStep$Carving;)V: applyCarvers -> m_213679_
+Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/getMinY()I from net/minecraft/world/level/chunk/ChunkGenerator/getMinY()I: getMinY -> m_142062_
+Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/getSeaLevel()I from net/minecraft/world/level/chunk/ChunkGenerator/getSeaLevel()I: getSeaLevel -> m_6337_
+Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/addDebugScreenInfo(Ljava/util/List;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/core/BlockPos;)V from net/minecraft/world/level/chunk/ChunkGenerator/addDebugScreenInfo(Ljava/util/List;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/core/BlockPos;)V: addDebugScreenInfo -> m_213600_
+Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/buildSurface(Lnet/minecraft/server/level/WorldGenRegion;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/chunk/ChunkAccess;)V from net/minecraft/world/level/chunk/ChunkGenerator/buildSurface(Lnet/minecraft/server/level/WorldGenRegion;Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/levelgen/RandomState;Lnet/minecraft/world/level/chunk/ChunkAccess;)V: buildSurface -> m_214194_
+Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/getGenDepth()I from net/minecraft/world/level/chunk/ChunkGenerator/getGenDepth()I: getGenDepth -> m_6331_
+Conflicting propagated mapping for org/jcs/egm/dimension/SoulRealmChunkGenerator/getBaseHeight(IILnet/minecraft/world/level/levelgen/Heightmap$Types;Lnet/minecraft/world/level/LevelHeightAccessor;Lnet/minecraft/world/level/levelgen/RandomState;)I from net/minecraft/world/level/chunk/ChunkGenerator/getBaseHeight(IILnet/minecraft/world/level/levelgen/Heightmap$Types;Lnet/minecraft/world/level/LevelHeightAccessor;Lnet/minecraft/world/level/levelgen/RandomState;)I: getBaseHeight -> m_214096_
+Conflicting propagated mapping for org/jcs/egm/stones/stone_soul/SoulStoneItem/onUseTick(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;I)V from org/jcs/egm/stones/StoneItem/onUseTick(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;I)V: onUseTick -> m_5929_
+Conflicting propagated mapping for org/jcs/egm/stones/stone_soul/SoulStoneItem/releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)V from org/jcs/egm/stones/StoneItem/releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)V: releaseUsing -> m_5551_
+Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderItem/getUseAnimation(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/UseAnim; from net/minecraft/world/item/Item/getUseAnimation(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/UseAnim;: getUseAnimation -> m_6164_
+Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderItem/use(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder; from net/minecraft/world/item/Item/use(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder;: use -> m_7203_
+Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderItem/getUseDuration(Lnet/minecraft/world/item/ItemStack;)I from net/minecraft/world/item/Item/getUseDuration(Lnet/minecraft/world/item/ItemStack;)I: getUseDuration -> m_8105_
+Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderItem/onUseTick(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;I)V from net/minecraft/world/item/Item/onUseTick(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;I)V: onUseTick -> m_5929_
+Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderItem/releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)V from net/minecraft/world/item/Item/releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)V: releaseUsing -> m_5551_
+Conflicting propagated mapping for org/jcs/egm/gauntlet/InfinityGauntletMenu$Provider/createMenu(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/entity/player/Player;)Lnet/minecraft/world/inventory/AbstractContainerMenu; from net/minecraft/world/inventory/MenuConstructor/createMenu(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/entity/player/Player;)Lnet/minecraft/world/inventory/AbstractContainerMenu;: createMenu -> m_7208_
+Conflicting propagated mapping for org/jcs/egm/gauntlet/InfinityGauntletMenu$Provider/getDisplayName()Lnet/minecraft/network/chat/Component; from net/minecraft/world/MenuProvider/getDisplayName()Lnet/minecraft/network/chat/Component;: getDisplayName -> m_5446_
 Conflicting propagated mapping for net/minecraftforge/items/SlotItemHandler/set(Lnet/minecraft/world/item/ItemStack;)V from net/minecraft/world/inventory/Slot/set(Lnet/minecraft/world/item/ItemStack;)V: set -> m_5852_
 Conflicting propagated mapping for net/minecraftforge/items/SlotItemHandler/mayPlace(Lnet/minecraft/world/item/ItemStack;)Z from net/minecraft/world/inventory/Slot/mayPlace(Lnet/minecraft/world/item/ItemStack;)Z: mayPlace -> m_5857_
 Conflicting propagated mapping for net/minecraftforge/items/SlotItemHandler/remove(I)Lnet/minecraft/world/item/ItemStack; from net/minecraft/world/inventory/Slot/remove(I)Lnet/minecraft/world/item/ItemStack;: remove -> m_6201_
@@ -222,13 +231,6 @@ Conflicting propagated mapping for net/minecraftforge/items/SlotItemHandler/getM
 Conflicting propagated mapping for net/minecraftforge/items/SlotItemHandler/mayPickup(Lnet/minecraft/world/entity/player/Player;)Z from net/minecraft/world/inventory/Slot/mayPickup(Lnet/minecraft/world/entity/player/Player;)Z: mayPickup -> m_8010_
 Conflicting propagated mapping for net/minecraftforge/items/SlotItemHandler/getMaxStackSize()I from net/minecraft/world/inventory/Slot/getMaxStackSize()I: getMaxStackSize -> m_6641_
 Conflicting propagated mapping for org/jcs/egm/gauntlet/InfinityGauntletMenu$InfinityStoneSlot/mayPlace(Lnet/minecraft/world/item/ItemStack;)Z from net/minecraftforge/items/SlotItemHandler/mayPlace(Lnet/minecraft/world/item/ItemStack;)Z: mayPlace -> m_5857_
-Conflicting propagated mapping for org/jcs/egm/gauntlet/InfinityGauntletMenu$Provider/createMenu(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/entity/player/Player;)Lnet/minecraft/world/inventory/AbstractContainerMenu; from net/minecraft/world/inventory/MenuConstructor/createMenu(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/entity/player/Player;)Lnet/minecraft/world/inventory/AbstractContainerMenu;: createMenu -> m_7208_
-Conflicting propagated mapping for org/jcs/egm/gauntlet/InfinityGauntletMenu$Provider/getDisplayName()Lnet/minecraft/network/chat/Component; from net/minecraft/world/MenuProvider/getDisplayName()Lnet/minecraft/network/chat/Component;: getDisplayName -> m_5446_
-Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderItem/getUseAnimation(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/UseAnim; from net/minecraft/world/item/Item/getUseAnimation(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/UseAnim;: getUseAnimation -> m_6164_
-Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderItem/use(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder; from net/minecraft/world/item/Item/use(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder;: use -> m_7203_
-Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderItem/getUseDuration(Lnet/minecraft/world/item/ItemStack;)I from net/minecraft/world/item/Item/getUseDuration(Lnet/minecraft/world/item/ItemStack;)I: getUseDuration -> m_8105_
-Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderItem/onUseTick(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;I)V from net/minecraft/world/item/Item/onUseTick(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;I)V: onUseTick -> m_5929_
-Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderItem/releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)V from net/minecraft/world/item/Item/releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)V: releaseUsing -> m_5551_
 Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$1/getContainerSize()I from net/minecraft/world/Container/getContainerSize()I: getContainerSize -> m_6643_
 Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$1/setItem(ILnet/minecraft/world/item/ItemStack;)V from net/minecraft/world/Container/setItem(ILnet/minecraft/world/item/ItemStack;)V: setItem -> m_6836_
 Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$1/removeItem(II)Lnet/minecraft/world/item/ItemStack; from net/minecraft/world/Container/removeItem(II)Lnet/minecraft/world/item/ItemStack;: removeItem -> m_7407_
@@ -239,13 +241,15 @@ Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$1/setChan
 Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$1/removeItemNoUpdate(I)Lnet/minecraft/world/item/ItemStack; from net/minecraft/world/Container/removeItemNoUpdate(I)Lnet/minecraft/world/item/ItemStack;: removeItemNoUpdate -> m_8016_
 Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$1/stillValid(Lnet/minecraft/world/entity/player/Player;)Z from net/minecraft/world/Container/stillValid(Lnet/minecraft/world/entity/player/Player;)Z: stillValid -> m_6542_
 Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$1/getMaxStackSize()I from net/minecraft/world/Container/getMaxStackSize()I: getMaxStackSize -> m_6893_
-Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$Provider/createMenu(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/entity/player/Player;)Lnet/minecraft/world/inventory/AbstractContainerMenu; from net/minecraft/world/inventory/MenuConstructor/createMenu(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/entity/player/Player;)Lnet/minecraft/world/inventory/AbstractContainerMenu;: createMenu -> m_7208_
-Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$Provider/getDisplayName()Lnet/minecraft/network/chat/Component; from net/minecraft/world/MenuProvider/getDisplayName()Lnet/minecraft/network/chat/Component;: getDisplayName -> m_5446_
+Conflicting propagated mapping for org/jcs/egm/stones/stone_mind/MindStoneItem/onUseTick(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;I)V from org/jcs/egm/stones/StoneItem/onUseTick(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;I)V: onUseTick -> m_5929_
+Conflicting propagated mapping for org/jcs/egm/stones/stone_mind/MindStoneItem/releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)V from org/jcs/egm/stones/StoneItem/releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)V: releaseUsing -> m_5551_
 Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$DummySlot/isActive()Z from net/minecraft/world/inventory/Slot/isActive()Z: isActive -> m_6659_
 Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$DummySlot/mayPlace(Lnet/minecraft/world/item/ItemStack;)Z from net/minecraft/world/inventory/Slot/mayPlace(Lnet/minecraft/world/item/ItemStack;)Z: mayPlace -> m_5857_
 Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$DummySlot/mayPickup(Lnet/minecraft/world/entity/player/Player;)Z from net/minecraft/world/inventory/Slot/mayPickup(Lnet/minecraft/world/entity/player/Player;)Z: mayPickup -> m_8010_
-Conflicting propagated mapping for net/minecraftforge/network/IContainerFactory/create(ILnet/minecraft/world/entity/player/Inventory;)Lnet/minecraft/world/inventory/AbstractContainerMenu; from net/minecraft/world/inventory/MenuType$MenuSupplier/create(ILnet/minecraft/world/entity/player/Inventory;)Lnet/minecraft/world/inventory/AbstractContainerMenu;: create -> m_39994_
+Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$Provider/createMenu(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/entity/player/Player;)Lnet/minecraft/world/inventory/AbstractContainerMenu; from net/minecraft/world/inventory/MenuConstructor/createMenu(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/entity/player/Player;)Lnet/minecraft/world/inventory/AbstractContainerMenu;: createMenu -> m_7208_
+Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$Provider/getDisplayName()Lnet/minecraft/network/chat/Component; from net/minecraft/world/MenuProvider/getDisplayName()Lnet/minecraft/network/chat/Component;: getDisplayName -> m_5446_
 Conflicting propagated mapping for org/jcs/egm/holders/StoneHolderMenu$StoneSlot/mayPlace(Lnet/minecraft/world/item/ItemStack;)Z from net/minecraftforge/items/SlotItemHandler/mayPlace(Lnet/minecraft/world/item/ItemStack;)Z: mayPlace -> m_5857_
+Conflicting propagated mapping for net/minecraftforge/network/IContainerFactory/create(ILnet/minecraft/world/entity/player/Inventory;)Lnet/minecraft/world/inventory/AbstractContainerMenu; from net/minecraft/world/inventory/MenuType$MenuSupplier/create(ILnet/minecraft/world/entity/player/Inventory;)Lnet/minecraft/world/inventory/AbstractContainerMenu;: create -> m_39994_
 Conflicting propagated mapping for org/jcs/egm/registry/UruTier$1/getUses()I from net/minecraft/world/item/Tier/getUses()I: getUses -> m_6609_
 Conflicting propagated mapping for org/jcs/egm/registry/UruTier$1/getSpeed()F from net/minecraft/world/item/Tier/getSpeed()F: getSpeed -> m_6624_
 Conflicting propagated mapping for org/jcs/egm/registry/UruTier$1/getRepairIngredient()Lnet/minecraft/world/item/crafting/Ingredient; from net/minecraft/world/item/Tier/getRepairIngredient()Lnet/minecraft/world/item/crafting/Ingredient;: getRepairIngredient -> m_6282_
@@ -262,8 +266,6 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   assets/egm/
   assets/egm/animations/
   assets/egm/animations/eyeofagamotto.animation.json
-  assets/egm/geo/
-  assets/egm/geo/eye_of_agamotto_necklace.geo.json
   assets/egm/lang/
   assets/egm/lang/en_us.json
   assets/egm/models/
@@ -336,10 +338,14 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   assets/egm/models/item/gauntlet_variants_3d/infinity_gauntlet_111110.json
   assets/egm/models/item/gauntlet_variants_3d/infinity_gauntlet_111111.json
   assets/egm/models/item/holders/
-  assets/egm/models/item/holders/eye_of_agamotto_necklace_no_stone.json
-  assets/egm/models/item/holders/eye_of_agamotto_necklace_stone.json
+  assets/egm/models/item/holders/aether_no_stone.json
+  assets/egm/models/item/holders/aether_stone.json
+  assets/egm/models/item/holders/eye_of_agamotto_no_stone.json
+  assets/egm/models/item/holders/eye_of_agamotto_stone.json
   assets/egm/models/item/holders/lokian_scepter_no_stone.json
   assets/egm/models/item/holders/lokian_scepter_stone.json
+  assets/egm/models/item/holders/red_skull_no_stone.json
+  assets/egm/models/item/holders/red_skull_stone.json
   assets/egm/models/item/holders/ronan_hammer_no_stone.json
   assets/egm/models/item/holders/ronan_hammer_stone.json
   assets/egm/models/item/holders/tesseract_no_stone.json
@@ -354,6 +360,19 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   assets/egm/models/item/red_skull.json
   assets/egm/models/item/soul_stone.json
   assets/egm/models/item/space_stone.json
+  assets/egm/models/item/stone_variants/
+  assets/egm/models/item/stone_variants/mind_stone_2d.json
+  assets/egm/models/item/stone_variants/mind_stone_3d.json
+  assets/egm/models/item/stone_variants/power_stone_2d.json
+  assets/egm/models/item/stone_variants/power_stone_3d.json
+  assets/egm/models/item/stone_variants/reality_stone_2d.json
+  assets/egm/models/item/stone_variants/reality_stone_3d.json
+  assets/egm/models/item/stone_variants/soul_stone_2d.json
+  assets/egm/models/item/stone_variants/soul_stone_3d.json
+  assets/egm/models/item/stone_variants/space_stone_2d.json
+  assets/egm/models/item/stone_variants/space_stone_3d.json
+  assets/egm/models/item/stone_variants/time_stone_2d.json
+  assets/egm/models/item/stone_variants/time_stone_3d.json
   assets/egm/models/item/tesseract.json
   assets/egm/models/item/time_stone.json
   assets/egm/particles/
@@ -362,15 +381,23 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   assets/egm/particles/reality_stone_effect_one.json
   assets/egm/particles/soul_stone_effect_one.json
   assets/egm/particles/time_stone_effect_one.json
+  assets/egm/particles/universal_particle_four.json
+  assets/egm/particles/universal_particle_one.json
+  assets/egm/particles/universal_particle_three.json
+  assets/egm/particles/universal_particle_two.json
   assets/egm/sounds.json
   assets/egm/sounds/
   assets/egm/sounds/dusted.ogg
   assets/egm/sounds/gauntlet_assembled.ogg
+  assets/egm/sounds/how_strange.ogg
   assets/egm/sounds/power_stone_charging.ogg
+  assets/egm/sounds/power_stone_explosion.ogg
   assets/egm/sounds/power_stone_firing.ogg
-  assets/egm/sounds/reality_stone_beam.ogg
   assets/egm/sounds/reality_stone_change.ogg
+  assets/egm/sounds/reality_stone_firing.ogg
   assets/egm/sounds/snap.ogg
+  assets/egm/sounds/time_stone_charging.ogg
+  assets/egm/sounds/universal_twinkle.ogg
   assets/egm/textures/
   assets/egm/textures/entity/
   assets/egm/textures/entity/placeholder.png
@@ -381,14 +408,25 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   assets/egm/textures/gui/stoneabilitygui.png
   assets/egm/textures/gui/stonemenugui.png
   assets/egm/textures/item/
+  assets/egm/textures/item/aether_assets/
+  assets/egm/textures/item/aether_assets/aether_effects.png
+  assets/egm/textures/item/aether_assets/aether_effects.png.mcmeta
+  assets/egm/textures/item/aether_assets/aether_no_stone_texture.png
+  assets/egm/textures/item/aether_assets/aether_texture.png
+  assets/egm/textures/item/aether_assets/aether_texture.png.mcmeta
   assets/egm/textures/item/eye_assets/
   assets/egm/textures/item/eye_assets/eye_of_agamotto.png
+  assets/egm/textures/item/eye_assets/eye_of_agamotto_2d_no_stone.png
+  assets/egm/textures/item/eye_assets/eye_of_agamotto_2d_stone.png
   assets/egm/textures/item/eye_assets/eye_of_agamotto_e.png
   assets/egm/textures/item/eye_assets/eye_of_agamotto_vfx.png
   assets/egm/textures/item/eye_assets/eye_of_agamotto_vfx.png.mcmeta
   assets/egm/textures/item/eye_assets/eye_of_agamotto_vfx_e.png
   assets/egm/textures/item/eye_assets/eye_of_agamotto_vfx_e.png.mcmeta
-  assets/egm/textures/item/infinity_gauntlet_3d.png
+  assets/egm/textures/item/infinity_gauntlet_assets/
+  assets/egm/textures/item/infinity_gauntlet_assets/infinity_gauntlet_cosmic_ruler_vfx_e.png
+  assets/egm/textures/item/infinity_gauntlet_assets/infinity_gauntlet_cosmic_ruler_vfx_e.png.mcmeta
+  assets/egm/textures/item/infinity_gauntlet_assets/infinity_gauntlet_texture.png
   assets/egm/textures/item/ingot_uru.png
   assets/egm/textures/item/kree_warhammer_assets/
   assets/egm/textures/item/kree_warhammer_assets/ronan_hammer_infused_metal.png
@@ -401,6 +439,11 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   assets/egm/textures/item/kree_warhammer_assets/ronan_hammer_metal_normal_e.png
   assets/egm/textures/item/kree_warhammer_assets/ronan_hammer_power_stone_infused_vfx.png
   assets/egm/textures/item/kree_warhammer_assets/ronan_hammer_power_stone_infused_vfx_e.png
+  assets/egm/textures/item/red_skull_assets/
+  assets/egm/textures/item/red_skull_assets/red_skull_no_stone.png
+  assets/egm/textures/item/red_skull_assets/red_skull_texture.png
+  assets/egm/textures/item/red_skull_assets/red_skull_texture.png.mcmeta
+  assets/egm/textures/item/red_skull_assets/soul_stone_e.png
   assets/egm/textures/item/scepter_assets/
   assets/egm/textures/item/scepter_assets/loki_sceptre.png
   assets/egm/textures/item/scepter_assets/loki_sceptre_e.png
@@ -409,25 +452,38 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   assets/egm/textures/item/scepter_assets/loki_sceptre_vfx_e.png
   assets/egm/textures/item/scepter_assets/loki_sceptre_vfx_e.png.mcmeta
   assets/egm/textures/item/snap.png
-  assets/egm/textures/item/stone_mind.png
-  assets/egm/textures/item/stone_power.png
-  assets/egm/textures/item/stone_power.png.mcmeta
-  assets/egm/textures/item/stone_reality.png
-  assets/egm/textures/item/stone_reality.png.mcmeta
-  assets/egm/textures/item/stone_soul.png
-  assets/egm/textures/item/stone_soul.png.mcmeta
-  assets/egm/textures/item/stone_space.png
-  assets/egm/textures/item/stone_time.png
-  assets/egm/textures/item/stone_time.png.mcmeta
+  assets/egm/textures/item/stone_assets/
+  assets/egm/textures/item/stone_assets/mind_texture_2d.png
+  assets/egm/textures/item/stone_assets/mind_texture_2d.png.mcmeta
+  assets/egm/textures/item/stone_assets/mind_texture_3d.png
+  assets/egm/textures/item/stone_assets/mind_texture_3d.png.mcmeta
+  assets/egm/textures/item/stone_assets/power_texture_2d.png
+  assets/egm/textures/item/stone_assets/power_texture_2d.png.mcmeta
+  assets/egm/textures/item/stone_assets/power_texture_3d.png
+  assets/egm/textures/item/stone_assets/power_texture_3d.png.mcmeta
+  assets/egm/textures/item/stone_assets/reality_texture_2d.png
+  assets/egm/textures/item/stone_assets/reality_texture_2d.png.mcmeta
+  assets/egm/textures/item/stone_assets/reality_texture_3d.png
+  assets/egm/textures/item/stone_assets/reality_texture_3d.png.mcmeta
+  assets/egm/textures/item/stone_assets/soul_texture_2d.png
+  assets/egm/textures/item/stone_assets/soul_texture_2d.png.mcmeta
+  assets/egm/textures/item/stone_assets/soul_texture_3d.png
+  assets/egm/textures/item/stone_assets/soul_texture_3d.png.mcmeta
+  assets/egm/textures/item/stone_assets/space_texture_2d.png
+  assets/egm/textures/item/stone_assets/space_texture_2d.png.mcmeta
+  assets/egm/textures/item/stone_assets/space_texture_3d.png
+  assets/egm/textures/item/stone_assets/space_texture_3d.png.mcmeta
+  assets/egm/textures/item/stone_assets/time_texture_2d.png
+  assets/egm/textures/item/stone_assets/time_texture_2d.png.mcmeta
+  assets/egm/textures/item/stone_assets/time_texture_3d.png
+  assets/egm/textures/item/stone_assets/time_texture_3d.png.mcmeta
   assets/egm/textures/item/tesseract_assets/
   assets/egm/textures/item/tesseract_assets/tesseract.png
+  assets/egm/textures/item/tesseract_assets/tesseract.png.mcmeta
   assets/egm/textures/item/tesseract_assets/tesseract_e.png
   assets/egm/textures/item/tesseract_assets/tesseract_no_stone.png
   assets/egm/textures/misc/
   assets/egm/textures/misc/mind_stone_blur.png
-  assets/egm/textures/models/
-  assets/egm/textures/models/armor/
-  assets/egm/textures/models/armor/eye_of_agamotto.png
   assets/egm/textures/particle/
   assets/egm/textures/particle/power_stone_effect_one.png
   assets/egm/textures/particle/power_stone_effect_one.png.mcmeta
@@ -438,6 +494,10 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   assets/egm/textures/particle/soul_stone_effect_one.png
   assets/egm/textures/particle/soul_stone_effect_one.png.mcmeta
   assets/egm/textures/particle/time_stone_effect_one.png
+  assets/egm/textures/particle/universal_particle_four.png
+  assets/egm/textures/particle/universal_particle_one.png
+  assets/egm/textures/particle/universal_particle_three.png
+  assets/egm/textures/particle/universal_particle_two.png
   data/
   data/egm/
   data/egm/configured_surface_builder/
@@ -460,12 +520,15 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   org/jcs/egm/client/InfinityGauntletScreen.class
   org/jcs/egm/client/StoneAbilityMenuScreen.class
   org/jcs/egm/client/StoneHolderScreen.class
+  org/jcs/egm/client/fx/
+  org/jcs/egm/client/fx/FXParticles$1.class
+  org/jcs/egm/client/fx/FXParticles$Universal.class
+  org/jcs/egm/client/fx/FXParticles.class
+  org/jcs/egm/client/fx/ShockwaveShakeHandler.class
   org/jcs/egm/client/input/
   org/jcs/egm/client/input/GauntletScrollHandler.class
   org/jcs/egm/client/input/GauntletSelectedStonePacket.class
   org/jcs/egm/client/input/InfinityKeybinds.class
-  org/jcs/egm/client/model/
-  org/jcs/egm/client/model/EyeOfAgamottoArmorModel.class
   org/jcs/egm/client/particle/
   org/jcs/egm/client/particle/PowerStoneEffectOne$Provider.class
   org/jcs/egm/client/particle/PowerStoneEffectOne.class
@@ -477,12 +540,13 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   org/jcs/egm/client/particle/SoulStoneEffectOne.class
   org/jcs/egm/client/particle/TimeStoneEffectOne$Provider.class
   org/jcs/egm/client/particle/TimeStoneEffectOne.class
+  org/jcs/egm/client/particle/UniversalTintParticle$Provider.class
+  org/jcs/egm/client/particle/UniversalTintParticle.class
   org/jcs/egm/client/render/
   org/jcs/egm/client/render/GauntletOverlayRenderer$StoneEntry.class
   org/jcs/egm/client/render/GauntletOverlayRenderer.class
   org/jcs/egm/client/render/PowerStoneLightningRenderer.class
-  org/jcs/egm/client/render/armor/
-  org/jcs/egm/client/render/armor/EyeOfAgamottoArmorRenderer.class
+  org/jcs/egm/client/render/TimeBubbleFieldRenderer.class
   org/jcs/egm/command/
   org/jcs/egm/command/SoulRealmCommand.class
   org/jcs/egm/command/SoulStoneRezResetCommand.class
@@ -495,6 +559,7 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   org/jcs/egm/egm.class
   org/jcs/egm/entity/
   org/jcs/egm/entity/PowerStoneLightningEntity.class
+  org/jcs/egm/entity/TimeBubbleFieldEntity.class
   org/jcs/egm/gauntlet/
   org/jcs/egm/gauntlet/InfinityGauntletItem.class
   org/jcs/egm/gauntlet/InfinityGauntletMenu$1.class
@@ -502,9 +567,6 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   org/jcs/egm/gauntlet/InfinityGauntletMenu$Provider.class
   org/jcs/egm/gauntlet/InfinityGauntletMenu.class
   org/jcs/egm/holders/
-  org/jcs/egm/holders/EyeOfAgamottoHolderItem$1$1.class
-  org/jcs/egm/holders/EyeOfAgamottoHolderItem$1.class
-  org/jcs/egm/holders/EyeOfAgamottoHolderItem.class
   org/jcs/egm/holders/StoneHolderItem$1$1.class
   org/jcs/egm/holders/StoneHolderItem$1.class
   org/jcs/egm/holders/StoneHolderItem.class
@@ -520,6 +582,8 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   org/jcs/egm/network/OpenGauntletMenuPacket.class
   org/jcs/egm/network/OpenStoneHolderMenuPacket.class
   org/jcs/egm/network/SetAbilityIndexPacket.class
+  org/jcs/egm/network/packet/
+  org/jcs/egm/network/packet/ShakeCameraPacket.class
   org/jcs/egm/registry/
   org/jcs/egm/registry/ModCreativeTab.class
   org/jcs/egm/registry/ModEntities.class
@@ -531,40 +595,51 @@ Writing Output: C:\Users\JCS\IdeaProjects\end-game-mod\build\reobfJar\output.jar
   org/jcs/egm/registry/UruTier.class
   org/jcs/egm/stones/
   org/jcs/egm/stones/IGStoneAbility.class
+  org/jcs/egm/stones/StoneAbilityCooldowns$Registrar.class
+  org/jcs/egm/stones/StoneAbilityCooldowns.class
   org/jcs/egm/stones/StoneAbilityRegistries.class
   org/jcs/egm/stones/StoneItem$StoneState.class
   org/jcs/egm/stones/StoneItem.class
   org/jcs/egm/stones/StoneUseDamage.class
   org/jcs/egm/stones/stone_mind/
-  org/jcs/egm/stones/stone_mind/CowerMindStoneAbility.class
   org/jcs/egm/stones/stone_mind/DisarmMindStoneAbility.class
   org/jcs/egm/stones/stone_mind/EnrageMindStoneAbility.class
   org/jcs/egm/stones/stone_mind/MindStoneAbilityRegistry.class
-  org/jcs/egm/stones/stone_mind/MindStoneItem$PassiveHandler.class
+  org/jcs/egm/stones/stone_mind/MindStoneItem$AnvilHooks.class
   org/jcs/egm/stones/stone_mind/MindStoneItem.class
-  org/jcs/egm/stones/stone_mind/MindStoneSuggestionEffect.class
-  org/jcs/egm/stones/stone_mind/PossessionMindStoneAbility.class
-  org/jcs/egm/stones/stone_mind/StunMindStoneAbility.class
   org/jcs/egm/stones/stone_power/
   org/jcs/egm/stones/stone_power/InfiniteLightningPowerStoneAbility.class
   org/jcs/egm/stones/stone_power/PowerStoneAbilityRegistry.class
   org/jcs/egm/stones/stone_power/PowerStoneItem.class
+  org/jcs/egm/stones/stone_power/ShockwaveSlamPowerStoneAbility.class
   org/jcs/egm/stones/stone_reality/
-  org/jcs/egm/stones/stone_reality/MetamorphosisBlacklistHelper.class
+  org/jcs/egm/stones/stone_reality/ClientMorphRenderHook$Puppet.class
+  org/jcs/egm/stones/stone_reality/ClientMorphRenderHook.class
   org/jcs/egm/stones/stone_reality/MetamorphosisRealityStoneAbility.class
+  org/jcs/egm/stones/stone_reality/MorphData$1.class
+  org/jcs/egm/stones/stone_reality/MorphData$Flags.class
+  org/jcs/egm/stones/stone_reality/MorphData$MorphState.class
+  org/jcs/egm/stones/stone_reality/MorphData$Provider.class
+  org/jcs/egm/stones/stone_reality/MorphData.class
+  org/jcs/egm/stones/stone_reality/PlayerMorphRenderHandler.class
   org/jcs/egm/stones/stone_reality/RealityStoneAbilityRegistry.class
   org/jcs/egm/stones/stone_reality/RealityStoneItem.class
+  org/jcs/egm/stones/stone_reality/S2CSyncMorph.class
+  org/jcs/egm/stones/stone_reality/WilledChaosBlacklistHelper.class
+  org/jcs/egm/stones/stone_reality/WilledChaosRealityStoneAbility.class
   org/jcs/egm/stones/stone_soul/
   org/jcs/egm/stones/stone_soul/SoulBindSoulStoneAbility.class
   org/jcs/egm/stones/stone_soul/SoulStoneAbilityRegistry.class
-  org/jcs/egm/stones/stone_soul/SoulStoneItem$PassiveHandler.class
+  org/jcs/egm/stones/stone_soul/SoulStoneItem$PassiveEvents.class
   org/jcs/egm/stones/stone_soul/SoulStoneItem.class
   org/jcs/egm/stones/stone_space/
+  org/jcs/egm/stones/stone_space/EndericBeamSpaceStoneAbility$1.class
   org/jcs/egm/stones/stone_space/EndericBeamSpaceStoneAbility.class
   org/jcs/egm/stones/stone_space/SpaceStoneAbilityRegistry.class
   org/jcs/egm/stones/stone_space/SpaceStoneItem.class
   org/jcs/egm/stones/stone_time/
   org/jcs/egm/stones/stone_time/PacifyTimeStoneAbility.class
+  org/jcs/egm/stones/stone_time/TimeBubbleTimeStoneAbility.class
   org/jcs/egm/stones/stone_time/TimeStoneAbilityRegistry.class
   org/jcs/egm/stones/stone_time/TimeStoneItem.class
   pack.mcmeta

@@ -7,6 +7,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.jcs.egm.egm;
 import org.jcs.egm.entity.PowerStoneLightningEntity;
+import org.jcs.egm.entity.TimeBubbleFieldEntity;
 
 public class ModEntities {
     public static final DeferredRegister<EntityType<?>> ENTITIES =
@@ -19,5 +20,12 @@ public class ModEntities {
                             .clientTrackingRange(128)
                             .build("power_stone_lightning"));
 
+    public static final RegistryObject<EntityType<TimeBubbleFieldEntity>> TIME_ACCEL_FIELD =
+            ENTITIES.register("time_accel_field",
+                    () -> EntityType.Builder.<TimeBubbleFieldEntity>of(TimeBubbleFieldEntity::new, MobCategory.MISC)
+                            .sized(0.25f, 0.25f)
+                            .clientTrackingRange(128)
+                            .updateInterval(1)
+                            .build("time_accel_field"));
 
 }
