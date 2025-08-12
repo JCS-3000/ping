@@ -61,9 +61,6 @@ public class SoulBanishSoulStoneAbility implements IGStoneAbility {
         );
         ServerLevel soulRealm = server.getServer().getLevel(soulKey);
         if (soulRealm == null) {
-            if (player instanceof ServerPlayer sp) {
-                sp.displayClientMessage(net.minecraft.network.chat.Component.literal("Soul Realm is missing."), true);
-            }
             return;
         }
 
@@ -92,14 +89,6 @@ public class SoulBanishSoulStoneAbility implements IGStoneAbility {
         }
 
         // Debug hint: where to look in the Soul Realm
-        if (player instanceof ServerPlayer sp) {
-            sp.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal(
-                            String.format("SoulBind → egm:soul_realm @ (%.1f, %.1f, %.1f)",
-                                    targetX + 0.5, targetY, targetZ + 0.5)
-                    ), true
-            );
-        }
 
         StoneAbilityCooldowns.apply(player, cdItem, "soul", abilityKey());
     }

@@ -49,9 +49,18 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
             SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "time_stone_charging"));
     private static final SoundEvent ACTIVATE_SOUND =
             SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "universal_twinkle"));
+    private static final SoundEvent RARE_ACTIVATE_SOUND =
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "how_strange"));
 
     private static final Set<UUID> CHARGING_SOUND_PLAYERS = new HashSet<>();
     private static final Map<UUID, Integer> CHARGE = new HashMap<>();
+    
+    /**
+     * Returns the activation sound - 95% chance for universal_twinkle, 5% chance for how_strange
+     */
+    private static SoundEvent getRandomActivationSound() {
+        return ThreadLocalRandom.current().nextDouble() < 0.05 ? RARE_ACTIVATE_SOUND : ACTIVATE_SOUND;
+    }
 
     @Override
     public void activate(Level level, Player player, ItemStack stack) {
@@ -93,7 +102,7 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
         } else if (AUTO_FIRE_AT_FULL && level.isClientSide) {
             stopChargingSoundClient(id);
             level.playLocalSound(player.getX(), player.getY(), player.getZ(),
-                    ACTIVATE_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F, false);
+                    getRandomActivationSound(), SoundSource.PLAYERS, 1.0F, 1.0F, false);
         }
     }
 
@@ -108,7 +117,7 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
 
         if (level.isClientSide) {
             level.playLocalSound(player.getX(), player.getY(), player.getZ(),
-                    ACTIVATE_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F, false);
+                    getRandomActivationSound(), SoundSource.PLAYERS, 1.0F, 1.0F, false);
         } else {
             fire(level, player, stack);
         }
@@ -118,7 +127,7 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
     private void fire(Level level, Player player, ItemStack stoneStack) {
         if (StoneAbilityCooldowns.guardUse(player, stoneStack, "time", this)) return;
 
-        level.playSound(null, player.blockPosition(), ACTIVATE_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F);
+        level.playSound(null, player.blockPosition(), getRandomActivationSound(), SoundSource.PLAYERS, 1.0F, 1.0F);
 
         // Visual burst first, then persistent dome
         Vec3 origin = player.position().add(0, 0.2, 0);

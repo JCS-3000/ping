@@ -147,8 +147,6 @@ public class ReversionTimeStoneAbility implements IGStoneAbility {
         if (changedAny) {
             level.playSound(null, player.blockPosition(), TWINKLE_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F);
             StoneAbilityCooldowns.apply(player, stoneStack, "time", this);
-        } else if (player instanceof ServerPlayer sp) {
-            sp.displayClientMessage(Component.literal("Nothing to pacify."), true);
         }
     }
 

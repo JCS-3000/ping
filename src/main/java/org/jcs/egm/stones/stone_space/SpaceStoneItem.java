@@ -17,7 +17,7 @@ public class SpaceStoneItem extends StoneItem {
     }
 
     @Override public String getKey()  { return "space"; }
-    @Override public int    getColor(){ return 0x00BFFF; }
+    @Override public int    getColor(){ return 0x2e3bc9; }
 
     @Override
     protected InteractionResultHolder<ItemStack> handleStoneUse(Level world, Player player, InteractionHand hand, ItemStack stack, StoneState state) {

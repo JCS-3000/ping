@@ -7,6 +7,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.jcs.egm.egm;
 import org.jcs.egm.entity.PowerStoneLightningEntity;
+import org.jcs.egm.entity.SingularityEntity;
 import org.jcs.egm.entity.TimeBubbleFieldEntity;
 
 public class ModEntities {
@@ -27,5 +28,13 @@ public class ModEntities {
                             .clientTrackingRange(128)
                             .updateInterval(1)
                             .build("time_accel_field"));
+
+    public static final RegistryObject<EntityType<SingularityEntity>> SINGULARITY =
+            ENTITIES.register("singularity",
+                    () -> EntityType.Builder.<SingularityEntity>of(SingularityEntity::new, MobCategory.MISC)
+                            .sized(0.5f, 0.5f)
+                            .clientTrackingRange(128)
+                            .updateInterval(1)
+                            .build("singularity"));
 
 }

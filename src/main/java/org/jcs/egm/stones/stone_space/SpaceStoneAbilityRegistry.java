@@ -8,10 +8,12 @@ import java.util.List;
 
 public class SpaceStoneAbilityRegistry {
     public static final IGStoneAbility ENDERIC_BEAM = new EndericBeamSpaceStoneAbility();
+    public static final IGStoneAbility SINGULARITY = new SingularitySpaceStoneAbility();
 
     private static final List<IGStoneAbility> ABILITIES = new ArrayList<>();
     static {
         ABILITIES.add(ENDERIC_BEAM);
+        ABILITIES.add(SINGULARITY);
     }
 
     public static List<IGStoneAbility> getAbilities() {
@@ -21,6 +23,7 @@ public class SpaceStoneAbilityRegistry {
     public static List<Component> getAbilityNames() {
         List<Component> names = new ArrayList<>();
         names.add(Component.literal("Enderic Beam"));
+        names.add(Component.literal("Singularity"));
         return names;
     }
 

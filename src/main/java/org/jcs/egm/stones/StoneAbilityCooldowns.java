@@ -51,7 +51,7 @@ public final class StoneAbilityCooldowns {
         // ===== TIME =====
         set("time","reversion").cooldown(360);
         set("time","bubble").cooldown(6000); // 5 minutes
-        set("time", "freeze").cooldown(3600);
+        set("time", "freeze").cooldown(3600); // 3600 originally
 
 
         // ===== MIND =====

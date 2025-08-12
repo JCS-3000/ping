@@ -30,8 +30,6 @@ public class EnrageMindStoneAbility implements IGStoneAbility {
 
         List<Mob> mobs = level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(10));
         if (mobs.isEmpty()) {
-            serverPlayer.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal("No mobs nearby to enrage."), true);
             return;
         }
 
@@ -57,9 +55,6 @@ public class EnrageMindStoneAbility implements IGStoneAbility {
                 other.ifPresent(mob::setTarget);
             }
         }
-
-        serverPlayer.displayClientMessage(
-                net.minecraft.network.chat.Component.literal("Nearby mobs are enraged!"), true);
 
         StoneAbilityCooldowns.apply(player, cdItem, "mind", abilityKey());
     }

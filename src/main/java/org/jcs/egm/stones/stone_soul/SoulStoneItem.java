@@ -7,10 +7,12 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -97,6 +99,9 @@ public class SoulStoneItem extends StoneItem {
             player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 3));
             player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 800, 0));
 
+            // A Soul For A Soul: Kill the closest entity as payment for revival
+            killClosestEntity(player);
+
             player.level().playSound(null, player.blockPosition(), SoundEvents.TOTEM_USE, SoundSource.PLAYERS, 1.0F, 1.0F);
             if (player.level() instanceof ServerLevel server) {
                 server.sendParticles(ParticleTypes.TOTEM_OF_UNDYING, player.getX(), player.getY() + 1.0, player.getZ(), 32, 0.4, 0.6, 0.4, 0.02);
@@ -129,6 +134,43 @@ public class SoulStoneItem extends StoneItem {
                 }
             }
             return ItemStack.EMPTY;
+        }
+
+        private static void killClosestEntity(Player player) {
+            Level level = player.level();
+            double searchRadius = 32.0; // Search within 32 blocks
+            
+            AABB searchArea = new AABB(
+                player.getX() - searchRadius, player.getY() - searchRadius, player.getZ() - searchRadius,
+                player.getX() + searchRadius, player.getY() + searchRadius, player.getZ() + searchRadius
+            );
+            
+            LivingEntity closestEntity = null;
+            double closestDistanceSq = Double.MAX_VALUE;
+            
+            // Find the closest living entity that isn't the player
+            for (Entity entity : level.getEntities(player, searchArea)) {
+                if (entity instanceof LivingEntity livingEntity && entity != player) {
+                    double distanceSq = player.distanceToSqr(entity);
+                    if (distanceSq < closestDistanceSq) {
+                        closestDistanceSq = distanceSq;
+                        closestEntity = livingEntity;
+                    }
+                }
+            }
+            
+            // Kill the closest entity if one was found
+            if (closestEntity != null) {
+                // Create soul particles at the victim's location
+                if (level instanceof ServerLevel server) {
+                    server.sendParticles(ParticleTypes.SOUL, 
+                        closestEntity.getX(), closestEntity.getY() + closestEntity.getBbHeight() / 2, closestEntity.getZ(), 
+                        20, 0.3, 0.3, 0.3, 0.05);
+                }
+                
+                // Kill the entity instantly
+                closestEntity.kill();
+            }
         }
     }
 

@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -15,6 +16,7 @@ import org.jcs.egm.client.particle.RealityStoneEffectOne;
 import org.jcs.egm.client.particle.SoulStoneEffectOne;
 import org.jcs.egm.client.particle.TimeStoneEffectOne;
 import org.jcs.egm.client.render.PowerStoneLightningRenderer;
+import org.jcs.egm.client.render.SingularityRenderer;
 import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.registry.ModItems;
 import org.jcs.egm.registry.ModMenuTypes;
@@ -33,6 +35,10 @@ public class ClientSetup {
         EntityRenderers.register(
                 ModEntities.TIME_ACCEL_FIELD.get(),
                 TimeBubbleFieldRenderer::new
+        );
+        EntityRenderers.register(
+                ModEntities.SINGULARITY.get(),
+                SingularityRenderer::new
         );
         event.enqueueWork(() -> {
             MenuScreens.register(
@@ -116,6 +122,14 @@ public class ClientSetup {
                     }
             );
         });
+    }
+
+    @Mod.EventBusSubscriber(value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
+    public class ModEntityRenderers {
+        @SubscribeEvent
+        public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
+            event.registerEntityRenderer(ModEntities.SINGULARITY.get(), SingularityRenderer::new);
+        }
     }
 
     @SubscribeEvent

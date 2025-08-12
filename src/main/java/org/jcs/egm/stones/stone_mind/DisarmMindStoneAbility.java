@@ -59,11 +59,6 @@ public class DisarmMindStoneAbility implements IGStoneAbility {
 
         if (didAnything) {
             StoneAbilityCooldowns.apply(player, cdItem, "mind", abilityKey());
-            serverPlayer.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal("Weapons wrenched from nearby hands."), true);
-        } else {
-            serverPlayer.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal("No targets nearby to disarm."), true);
         }
     }
 
