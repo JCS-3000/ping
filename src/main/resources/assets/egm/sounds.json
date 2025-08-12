@@ -11,5 +11,7 @@
   "reality_stone_firing": { "category": "players", "sounds": [{ "name": "egm:reality_stone_firing" }] },
   "reality_stone_change": { "category": "players", "sounds": [{ "name": "egm:reality_stone_change" }] },
   "space_teleport_effect": { "category": "players", "sounds": [{ "name": "egm:space_teleport_effect" }] },
+  "space_stone_charging": { "category": "players", "sounds": [{ "name": "egm:space_stone_charging" }] },
+  "space_singularity": { "category": "players", "sounds": [{ "name": "egm:space_singularity" }] },
   "universal_twinkle": { "category": "players", "sounds": [{ "name": "egm:universal_twinkle" }] }
 }

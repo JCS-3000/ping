@@ -43,6 +43,8 @@ public final class StoneAbilityCooldowns {
 
         // ===== SPACE =====
         set("space","enderic_beam").cooldown(360);
+        set("space","singularity").cooldown(1000);
+        set("space","moon_toss").cooldown(100).chargeup(80);
 
         // ===== REALITY =====
         set("reality","willed_chaos").cooldown(240);

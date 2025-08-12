@@ -6,6 +6,7 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.jcs.egm.egm;
+import org.jcs.egm.entity.MeteorEntity;
 import org.jcs.egm.entity.PowerStoneLightningEntity;
 import org.jcs.egm.entity.SingularityEntity;
 import org.jcs.egm.entity.TimeBubbleFieldEntity;
@@ -36,5 +37,13 @@ public class ModEntities {
                             .clientTrackingRange(128)
                             .updateInterval(1)
                             .build("singularity"));
+
+    public static final RegistryObject<EntityType<MeteorEntity>> METEOR =
+            ENTITIES.register("meteor",
+                    () -> EntityType.Builder.<MeteorEntity>of(MeteorEntity::new, MobCategory.MISC)
+                            .sized(1.0f, 1.0f)
+                            .clientTrackingRange(128)
+                            .updateInterval(1)
+                            .build("meteor"));
 
 }

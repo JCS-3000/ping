@@ -9,11 +9,13 @@ import java.util.List;
 public class SpaceStoneAbilityRegistry {
     public static final IGStoneAbility ENDERIC_BEAM = new EndericBeamSpaceStoneAbility();
     public static final IGStoneAbility SINGULARITY = new SingularitySpaceStoneAbility();
+    public static final IGStoneAbility MOON_TOSS = new MoonTossSpaceStoneAbility();
 
     private static final List<IGStoneAbility> ABILITIES = new ArrayList<>();
     static {
         ABILITIES.add(ENDERIC_BEAM);
         ABILITIES.add(SINGULARITY);
+        ABILITIES.add(MOON_TOSS);
     }
 
     public static List<IGStoneAbility> getAbilities() {
@@ -24,6 +26,7 @@ public class SpaceStoneAbilityRegistry {
         List<Component> names = new ArrayList<>();
         names.add(Component.literal("Enderic Beam"));
         names.add(Component.literal("Singularity"));
+        names.add(Component.literal("Moon Toss"));
         return names;
     }
 

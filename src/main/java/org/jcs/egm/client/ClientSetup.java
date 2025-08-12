@@ -15,6 +15,7 @@ import org.jcs.egm.client.particle.PowerStoneEffectOne;
 import org.jcs.egm.client.particle.RealityStoneEffectOne;
 import org.jcs.egm.client.particle.SoulStoneEffectOne;
 import org.jcs.egm.client.particle.TimeStoneEffectOne;
+import org.jcs.egm.client.render.MeteorRenderer;
 import org.jcs.egm.client.render.PowerStoneLightningRenderer;
 import org.jcs.egm.client.render.SingularityRenderer;
 import org.jcs.egm.registry.ModEntities;
@@ -39,6 +40,10 @@ public class ClientSetup {
         EntityRenderers.register(
                 ModEntities.SINGULARITY.get(),
                 SingularityRenderer::new
+        );
+        EntityRenderers.register(
+                ModEntities.METEOR.get(),
+                MeteorRenderer::new
         );
         event.enqueueWork(() -> {
             MenuScreens.register(
@@ -129,6 +134,7 @@ public class ClientSetup {
         @SubscribeEvent
         public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
             event.registerEntityRenderer(ModEntities.SINGULARITY.get(), SingularityRenderer::new);
+            event.registerEntityRenderer(ModEntities.METEOR.get(), MeteorRenderer::new);
         }
     }
 

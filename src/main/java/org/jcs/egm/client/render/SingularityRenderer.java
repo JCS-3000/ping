@@ -46,70 +46,44 @@ public class SingularityRenderer extends EntityRenderer<SingularityEntity> {
         Matrix4f pose = ps.last().pose();
         Matrix3f nMat = ps.last().normal();
 
-        // Use solid entity pipeline (pos, color, uv, overlay, light, normal)
-        VertexConsumer vc = buf.getBuffer(RenderType.entitySolid(WHITE_TEX));
+        // Use translucent render type to ensure all faces are visible
+        VertexConsumer vc = buf.getBuffer(RenderType.entityTranslucent(WHITE_TEX));
 
         final float h = 0.5f;
 
-        // Each face defined explicitly with outward CCW winding
-        // Then we also emit the same face reversed (double-sided) to totally eliminate cull artifacts.
-
-        // Z+ (0,0,1)
+        // Render all faces with proper CCW winding to ensure visibility
+        // Z+ (front face)
         addQuad(vc, pose, nMat, r,g,b,a, packedLight,
                 new Vector3f(-h,-h, h), new Vector3f( h,-h, h),
                 new Vector3f( h, h, h), new Vector3f(-h, h, h),
                 new Vector3f(0,0,1));
-        addQuadReversed(vc, pose, nMat, r,g,b,a, packedLight,
-                new Vector3f(-h,-h, h), new Vector3f( h,-h, h),
-                new Vector3f( h, h, h), new Vector3f(-h, h, h),
-                new Vector3f(0,0,1));
 
-        // Z- (0,0,-1)
+        // Z- (back face) 
         addQuad(vc, pose, nMat, r,g,b,a, packedLight,
                 new Vector3f( h,-h,-h), new Vector3f(-h,-h,-h),
                 new Vector3f(-h, h,-h), new Vector3f( h, h,-h),
                 new Vector3f(0,0,-1));
-        addQuadReversed(vc, pose, nMat, r,g,b,a, packedLight,
-                new Vector3f( h,-h,-h), new Vector3f(-h,-h,-h),
-                new Vector3f(-h, h,-h), new Vector3f( h, h,-h),
-                new Vector3f(0,0,-1));
 
-        // X+ (1,0,0)
+        // X+ (right face)
         addQuad(vc, pose, nMat, r,g,b,a, packedLight,
                 new Vector3f( h,-h, h), new Vector3f( h,-h,-h),
                 new Vector3f( h, h,-h), new Vector3f( h, h, h),
                 new Vector3f(1,0,0));
-        addQuadReversed(vc, pose, nMat, r,g,b,a, packedLight,
-                new Vector3f( h,-h, h), new Vector3f( h,-h,-h),
-                new Vector3f( h, h,-h), new Vector3f( h, h, h),
-                new Vector3f(1,0,0));
 
-        // X- (-1,0,0)
+        // X- (left face)
         addQuad(vc, pose, nMat, r,g,b,a, packedLight,
                 new Vector3f(-h,-h,-h), new Vector3f(-h,-h, h),
                 new Vector3f(-h, h, h), new Vector3f(-h, h,-h),
                 new Vector3f(-1,0,0));
-        addQuadReversed(vc, pose, nMat, r,g,b,a, packedLight,
-                new Vector3f(-h,-h,-h), new Vector3f(-h,-h, h),
-                new Vector3f(-h, h, h), new Vector3f(-h, h,-h),
-                new Vector3f(-1,0,0));
 
-        // Y+ (0,1,0)
+        // Y+ (top face)
         addQuad(vc, pose, nMat, r,g,b,a, packedLight,
                 new Vector3f(-h, h, h), new Vector3f( h, h, h),
                 new Vector3f( h, h,-h), new Vector3f(-h, h,-h),
                 new Vector3f(0,1,0));
-        addQuadReversed(vc, pose, nMat, r,g,b,a, packedLight,
-                new Vector3f(-h, h, h), new Vector3f( h, h, h),
-                new Vector3f( h, h,-h), new Vector3f(-h, h,-h),
-                new Vector3f(0,1,0));
 
-        // Y- (0,-1,0)
+        // Y- (bottom face)
         addQuad(vc, pose, nMat, r,g,b,a, packedLight,
-                new Vector3f(-h,-h,-h), new Vector3f( h,-h,-h),
-                new Vector3f( h,-h, h), new Vector3f(-h,-h, h),
-                new Vector3f(0,-1,0));
-        addQuadReversed(vc, pose, nMat, r,g,b,a, packedLight,
                 new Vector3f(-h,-h,-h), new Vector3f( h,-h,-h),
                 new Vector3f( h,-h, h), new Vector3f(-h,-h, h),
                 new Vector3f(0,-1,0));
@@ -136,25 +110,6 @@ public class SingularityRenderer extends EntityRenderer<SingularityEntity> {
         put(vc, pose, v0, r,g,b,a, 0f,0f, light, nt);
     }
 
-    // Emit the same face but with reversed winding/normal (back-face), so culling never hides it.
-    private static void addQuadReversed(VertexConsumer vc, Matrix4f pose, Matrix3f nMat,
-                                        float r, float g, float b, float a, int light,
-                                        Vector3f v0, Vector3f v1, Vector3f v2, Vector3f v3, Vector3f n) {
-        Vector3f nt = new Vector3f(
-                -n.x * nMat.m00() + -n.y * nMat.m10() + -n.z * nMat.m20(),
-                -n.x * nMat.m01() + -n.y * nMat.m11() + -n.z * nMat.m21(),
-                -n.x * nMat.m02() + -n.y * nMat.m12() + -n.z * nMat.m22()
-        ).normalize();
-
-        // reversed order: v0,v3,v2 and v2,v1,v0
-        put(vc, pose, v0, r,g,b,a, 0f,0f, light, nt);
-        put(vc, pose, v3, r,g,b,a, 0f,1f, light, nt);
-        put(vc, pose, v2, r,g,b,a, 1f,1f, light, nt);
-
-        put(vc, pose, v2, r,g,b,a, 1f,1f, light, nt);
-        put(vc, pose, v1, r,g,b,a, 1f,0f, light, nt);
-        put(vc, pose, v0, r,g,b,a, 0f,0f, light, nt);
-    }
 
     private static void put(VertexConsumer vc, Matrix4f pose, Vector3f p,
                             float r, float g, float b, float a,

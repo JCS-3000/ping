@@ -17,6 +17,8 @@ public class SingularitySpaceStoneAbility implements IGStoneAbility {
 
     private static final SoundEvent SINGULARITY_SOUND = 
             SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "space_singularity"));
+    private static final SoundEvent SPACE_TELEPORT_SOUND = 
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "space_teleport_effect"));
 
     @Override
     public String abilityKey() { return "singularity"; }
@@ -40,6 +42,9 @@ public class SingularitySpaceStoneAbility implements IGStoneAbility {
         };
 
         if (level instanceof ServerLevel server) {
+            // Play space teleport effect sound first
+            level.playSound(null, player.blockPosition(), SPACE_TELEPORT_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F);
+            
             // Play creation sound
             level.playSound(null, player.blockPosition(), SINGULARITY_SOUND, SoundSource.PLAYERS, 1.0F, 0.8F);
             

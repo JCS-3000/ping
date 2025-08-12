@@ -17,9 +17,14 @@ public class ModCreativeTab {
             CREATIVE_TABS.register("egm_tab", () ->
                     CreativeModeTab.builder()
                             .title(Component.translatable("End Game"))
-                            .icon(() -> new ItemStack(ModItems.INFINITY_GAUNTLET.get()))
+                            .icon(() -> new ItemStack(ModItems.GAUNTLET_ICON.get()))
                             .displayItems((params, output) -> {
-                                ModItems.ITEMS.getEntries().forEach(item -> output.accept(item.get()));
+                                ModItems.ITEMS.getEntries().forEach(item -> {
+                                    // Exclude the gauntlet icon from appearing in creative menu
+                                    if (item.get() != ModItems.GAUNTLET_ICON.get()) {
+                                        output.accept(item.get());
+                                    }
+                                });
                             })
                             .build()
             );

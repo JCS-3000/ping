@@ -1,5 +1,6 @@
 package org.jcs.egm.entity;
 
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -30,11 +31,11 @@ public class SingularityEntity extends Entity {
     private static final EntityDataAccessor<String> DATA_CASTER_UUID =
             SynchedEntityData.defineId(SingularityEntity.class, EntityDataSerializers.STRING);
 
-    private static final int DURATION_TICKS = 160;
-    private static final double PULL_RADIUS = 12.0;
-    private static final double DAMAGE_RADIUS = 3.0;
+    private static final int DURATION_TICKS = 1000;
+    private static final double PULL_RADIUS = 20.0;
+    private static final double DAMAGE_RADIUS = 15.0;
     private static final double DESTROY_ITEM_RADIUS = 2.0;
-    private static final float DAMAGE_AMOUNT = 8.0F;
+    private static final float DAMAGE_AMOUNT = 2.0F;
 
     private UUID casterId;
 
@@ -104,6 +105,9 @@ public class SingularityEntity extends Entity {
 
         for (Entity entity : entities) {
             if (entity == this) continue;
+            
+            // Skip caster (immunity)
+            if (entity.getUUID().equals(this.casterId)) continue;
 
             double distance = entity.position().distanceTo(center);
             if (distance > PULL_RADIUS) continue;
@@ -112,7 +116,7 @@ public class SingularityEntity extends Entity {
             pullStrength = pullStrength * pullStrength;
 
             Vec3 toCenter = center.subtract(entity.position()).normalize();
-            Vec3 pullForce = toCenter.scale(pullStrength * 0.3);
+            Vec3 pullForce = toCenter.scale(pullStrength * 1.1); // PULL STRENGTH
 
             entity.setDeltaMovement(entity.getDeltaMovement().add(pullForce));
             entity.hurtMarked = true;
@@ -137,43 +141,114 @@ public class SingularityEntity extends Entity {
     }
 
     private void spawnSingularityParticles(ServerLevel level, Vec3 center, int age) {
-        // Flowing toward center
-        for (int i = 0; i < 12; i++) {
-            double spiralTime = (age + i * 10) * 0.05;
-            double radius = 5.0 - (spiralTime % 5.0);
-            double angle = spiralTime * 3.0;
-            double height = Math.sin(spiralTime * 2) * 1.5;
-            if (radius < 0.5) continue;
+        // Flowing toward center - increased count for more density
+        for (int i = 0; i < 20; i++) {
+            double spiralTime = (age + i * 8) * 0.05;
+            double radius = 6.0 - (spiralTime % 6.0);
+            double angle = spiralTime * 3.5;
+            double height = Math.sin(spiralTime * 2.5) * 1.8;
+            if (radius < 0.3) continue;
 
             double x = center.x + Math.cos(angle) * radius;
             double y = center.y + height;
             double z = center.z + Math.sin(angle) * radius;
 
-            float intensity = (float)(1.0 - radius / 5.0);
+            float intensity = (float)(1.0 - radius / 6.0);
             NetworkHandler.sendTintedParticle(level, ModParticles.UNIVERSAL_PARTICLE_ONE.get(),
-                    x, y, z, 0.0f, 0.1f + intensity * 0.2f, 0.3f + intensity * 0.4f);
+                    x, y, z, 0.0f, 0.1f + intensity * 0.3f, 0.4f + intensity * 0.5f);
         }
 
-        // Swirling "outside blue" accretion disk — now 25% closer to the cube
+        // Enhanced accretion disk with more particles
         double time = age * 0.1;
-        for (int i = 0; i < 6; i++) {
-            double angle = (i / 6.0) * Math.PI * 2 + time;
-
-            // ORIGINAL: radius = 2.0 + sin(time + i) * 0.5;
-            // NEW: bring 25% closer -> multiply by 0.75
+        for (int i = 0; i < 12; i++) {
+            double angle = (i / 12.0) * Math.PI * 2 + time;
             double radius = (2.0 + Math.sin(time + i) * 0.5) * 0.75;
 
             double x = center.x + Math.cos(angle) * radius;
             double y = center.y + Math.sin(time * 2 + i) * 0.2;
             double z = center.z + Math.sin(angle) * radius;
 
-            // Blue accretion disk
+            // Blue accretion disk - more intense
             NetworkHandler.sendTintedParticle(level, ModParticles.UNIVERSAL_PARTICLE_TWO.get(),
-                    x, center.y, z, 0.1f, 0.2f, 0.5f);
+                    x, center.y, z, 0.15f, 0.25f, 0.6f);
 
-            // Keep (very faint) vertical swirl if you want; else comment out.
+            // Vertical swirl particles
             NetworkHandler.sendTintedParticle(level, ModParticles.UNIVERSAL_PARTICLE_THREE.get(),
-                    x, y, z, 0.0f, 0.1f, 0.2f);
+                    x, y, z, 0.05f, 0.15f, 0.3f);
+        }
+
+        // Cosmic end rod particles - create streaming effect toward center
+        if (age % 4 == 0) {
+            for (int i = 0; i < 8; i++) {
+                double angle = (i / 8.0) * Math.PI * 2 + (age * 0.02);
+                double outerRadius = 8.0 + Math.sin(age * 0.05 + i) * 1.5;
+                
+                double startX = center.x + Math.cos(angle) * outerRadius;
+                double startY = center.y + Math.sin(age * 0.03 + i * 2) * 2.5;
+                double startZ = center.z + Math.sin(angle) * outerRadius;
+                
+                // Create particle stream from outer ring to center
+                spawnParticleStream(level, ParticleTypes.END_ROD, 
+                    new Vec3(startX, startY, startZ), center, 6, 0.0);
+            }
+        }
+
+        // Portal particles - create streams from mid-range to center
+        if (age % 3 == 0) {
+            for (int i = 0; i < 6; i++) {
+                double angle = Math.random() * Math.PI * 2;
+                double radius = 4.0 + Math.random() * 4.0;
+                double height = (Math.random() - 0.5) * 3.0;
+                
+                double startX = center.x + Math.cos(angle) * radius;
+                double startY = center.y + height;
+                double startZ = center.z + Math.sin(angle) * radius;
+                
+                // Create particle stream from mid-range to center
+                spawnParticleStream(level, ParticleTypes.PORTAL, 
+                    new Vec3(startX, startY, startZ), center, 4, 0.05);
+            }
+        }
+
+        // Dark smoke particles - create ominous streams flowing to center
+        if (age % 2 == 0) {
+            for (int i = 0; i < 4; i++) {
+                double angle = Math.random() * Math.PI * 2;
+                double radius = 2.5 + Math.random() * 2.0;
+                
+                double startX = center.x + Math.cos(angle) * radius;
+                double startY = center.y + (Math.random() - 0.5) * 1.0;
+                double startZ = center.z + Math.sin(angle) * radius;
+                
+                // Create smoke stream flowing to center
+                spawnParticleStream(level, ParticleTypes.LARGE_SMOKE, 
+                    new Vec3(startX, startY, startZ), center, 3, 0.1);
+            }
+        }
+    }
+
+    /**
+     * Creates a visual stream of particles from start point to end point
+     */
+    private void spawnParticleStream(ServerLevel level, net.minecraft.core.particles.ParticleOptions particleType, 
+                                   Vec3 start, Vec3 end, int particleCount, double spread) {
+        Vec3 direction = end.subtract(start);
+        double distance = direction.length();
+        Vec3 step = direction.normalize().scale(distance / particleCount);
+        
+        for (int i = 0; i < particleCount; i++) {
+            double progress = (double) i / particleCount;
+            Vec3 pos = start.add(step.scale(i));
+            
+            // Add slight randomness for more natural effect
+            double offsetX = (Math.random() - 0.5) * spread;
+            double offsetY = (Math.random() - 0.5) * spread;
+            double offsetZ = (Math.random() - 0.5) * spread;
+            
+            // Spawn particle with no velocity (static positioning)
+            level.sendParticles(particleType, 
+                pos.x + offsetX, pos.y + offsetY, pos.z + offsetZ, 
+                1, 0, 0, 0, 0);
         }
     }
 

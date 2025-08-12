@@ -62,4 +62,8 @@ public class ModItems {
                     .rarity(Rarity.UNCOMMON)
                     .stacksTo(64)
             ));
+
+    // CREATIVE TAB ICON (not in creative menu)
+    public static final RegistryObject<Item> GAUNTLET_ICON = ITEMS.register("gauntlet_icon",
+            () -> new Item(new Item.Properties().stacksTo(1)));
 }
