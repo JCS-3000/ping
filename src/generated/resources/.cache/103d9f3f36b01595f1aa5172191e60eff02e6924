@@ -1,0 +1,4 @@
+// 1.20.1	2025-08-12T23:22:07.3662868	Registries
+eed90d3f3afe4ec54c51bfcea84b808beaffe026 data/egm/forge/biome_modifier/add_trapped_starlight_ore.json
+2db6945f5ad59505b359b418a5d50a90dd5710e5 data/egm/worldgen/configured_feature/trapped_starlight_ore.json
+121efbb94e58a2071b491df725dcdfe6adb242ad data/egm/worldgen/placed_feature/trapped_starlight_ore.json

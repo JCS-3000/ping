@@ -1,5 +1,6 @@
 package org.jcs.egm;
 
+import com.mojang.logging.LogUtils;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -10,10 +11,12 @@ import org.jcs.egm.config.ModCommonConfig;
 import org.jcs.egm.dimension.ModDimensions;
 import org.jcs.egm.network.NetworkHandler;
 import org.jcs.egm.registry.*;
+import org.slf4j.Logger;
 
 @Mod(egm.MODID)
 public class egm {
     public static final String MODID = "egm";
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     public egm() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
@@ -22,6 +25,7 @@ public class egm {
         modEventBus.addListener(this::setup);
         ModCreativeTab.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
+        ModBlocks.BLOCKS.register(modEventBus);
         ModMenuTypes.MENUS.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
         ModParticles.PARTICLES.register(modEventBus);
@@ -30,5 +34,6 @@ public class egm {
 
     private void setup(final FMLCommonSetupEvent event) {
         NetworkHandler.register();
+        LOGGER.info("EGM: Common setup complete");
     }
 }

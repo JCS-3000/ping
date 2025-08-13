@@ -13,9 +13,11 @@
   "item.egm.red_skull": "Red Skull",
   "item.egm.eye_of_agamotto": "Eye of Agamotto",
   "item.egm.ingot_uru": "Uru Ingot",
+  "item.egm.starlight_chunk": "Starlight Chunk",
+  "block.egm.uru_block": "Uru Block",
+  "block.egm.trapped_starlight": "Trapped Starlight",
   "death.attack.infinity_stone": "%1$s decided to emulate Tony Stark",
 
-
-"itemGroup.egm.egm_tab": "End Game Mod"
+  "itemGroup.egm.egm_tab": "End Game Mod"
 
 }

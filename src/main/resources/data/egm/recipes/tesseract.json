@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "UUU",
+    "USU",
+    "UUU"
+  ],
+  "key": {
+    "U": {
+      "item": "egm:ingot_uru"
+    },
+    "S": {
+      "item": "egm:space_stone"
+    }
+  },
+  "result": {
+    "item": "egm:tesseract",
+    "count": 1
+  }
+}

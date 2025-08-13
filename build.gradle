@@ -85,12 +85,21 @@ repositories {
             includeGroup("com.eliotlash.mclib")
         }
     }
+    maven {
+        name = 'JEI'
+        url = 'https://maven.blamejared.com'
+    }
 }
 
 dependencies {
     minecraft 'net.minecraftforge:forge:1.20.1-47.4.0'
     implementation fg.deobf("software.bernie.geckolib:geckolib-forge-${minecraft_version}:4.7.2")
     implementation("com.eliotlash.mclib:mclib:20")
+    
+    // JEI integration
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:15.2.0.27")
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:15.2.0.27")
+    runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:15.2.0.27")
 }
 
 

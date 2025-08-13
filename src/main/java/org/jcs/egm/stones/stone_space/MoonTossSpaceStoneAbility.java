@@ -17,6 +17,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.particles.DustParticleOptions;
 import org.joml.Vector3f;
 import org.jcs.egm.entity.MeteorEntity;
+import org.jcs.egm.particles.ChargingParticleHelper;
 import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.stones.IGStoneAbility;
 import org.jcs.egm.stones.StoneAbilityCooldowns;
@@ -65,6 +66,7 @@ public class MoonTossSpaceStoneAbility implements IGStoneAbility {
                 if (ticksHeld % 4 == 0) {
                     spawnChargingParticles(level, player);
                     spawnTargetingBeam(level, player);
+                    ChargingParticleHelper.spawnSpaceSuckInParticles(level, player);
                 }
             }
             return;
@@ -88,6 +90,7 @@ public class MoonTossSpaceStoneAbility implements IGStoneAbility {
             if (ticksHeld % 4 == 0) {
                 spawnChargingParticles(level, player);
                 spawnTargetingBeam(level, player);
+                ChargingParticleHelper.spawnSpaceSuckInParticles(level, player);
             }
         } else {
             CHARGE.put(id, chargeTicks);

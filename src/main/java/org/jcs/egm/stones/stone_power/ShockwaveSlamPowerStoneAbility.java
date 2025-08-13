@@ -16,6 +16,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jcs.egm.config.ModCommonConfig;
 import org.jcs.egm.network.packet.ShakeCameraPacket;
+import org.jcs.egm.particles.ChargingParticleHelper;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
 import org.jcs.egm.stones.StoneAbilityCooldowns;
@@ -83,7 +84,10 @@ public class ShockwaveSlamPowerStoneAbility implements IGStoneAbility {
                             0.9f, 1.0f, true);
                     CHARGING_SOUND_PLAYERS.add(id);
                 }
-                if (ticksHeld % 4 == 0) spawnChargeParticles(level, player, ticksHeld, chargeTicks);
+                if (ticksHeld % 4 == 0) {
+                    spawnChargeParticles(level, player, ticksHeld, chargeTicks);
+                    ChargingParticleHelper.spawnIntensePowerSuckInParticles(level, player);
+                }
             }
             return;
         }
@@ -104,7 +108,10 @@ public class ShockwaveSlamPowerStoneAbility implements IGStoneAbility {
         }
 
         if (level.isClientSide) {
-            if (ticksHeld % 4 == 0) spawnChargeParticles(level, player, chargeTicks, chargeTicks);
+            if (ticksHeld % 4 == 0) {
+                spawnChargeParticles(level, player, chargeTicks, chargeTicks);
+                ChargingParticleHelper.spawnIntensePowerSuckInParticles(level, player);
+            }
         } else {
             CHARGE.put(id, chargeTicks);
         }
@@ -131,7 +138,7 @@ public class ShockwaveSlamPowerStoneAbility implements IGStoneAbility {
         level.playSound(null, player.blockPosition(), POWER_STONE_EXPLOSION, SoundSource.PLAYERS, 1.0F, 1.0F);
 
         if (level instanceof ServerLevel server) {
-            server.sendParticles(ModParticles.POWER_STONE_EFFECT_TWO.get(), origin.x, origin.y, origin.z,
+            server.sendParticles(ModParticles.POWER_STONE_EFFECT_ONE.get(), origin.x, origin.y, origin.z,
                     CORE_BURST_COUNT, CORE_BURST_SPREAD_XZ, CORE_BURST_SPREAD_Y, CORE_BURST_SPREAD_XZ, CORE_BURST_SPEED);
             server.sendParticles(ParticleTypes.EXPLOSION_EMITTER, origin.x, origin.y, origin.z, 1, 0, 0, 0, 0.0);
             server.sendParticles(ParticleTypes.EXPLOSION, origin.x, origin.y + 0.1, origin.z, 12, 0.6, 0.2, 0.6, 0.15);

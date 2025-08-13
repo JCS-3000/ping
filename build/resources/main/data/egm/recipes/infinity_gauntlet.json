@@ -1,0 +1,38 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "TPS",
+    "UBU",
+    "RSoM"
+  ],
+  "key": {
+    "T": {
+      "item": "egm:time_stone"
+    },
+    "P": {
+      "item": "egm:power_stone"
+    },
+    "S": {
+      "item": "egm:space_stone"
+    },
+    "U": {
+      "item": "egm:ingot_uru"
+    },
+    "B": {
+      "item": "egm:uru_block"
+    },
+    "R": {
+      "item": "egm:reality_stone"
+    },
+    "So": {
+      "item": "egm:soul_stone"
+    },
+    "M": {
+      "item": "egm:mind_stone"
+    }
+  },
+  "result": {
+    "item": "egm:infinity_gauntlet",
+    "count": 1
+  }
+}

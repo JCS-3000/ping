@@ -31,6 +31,9 @@ public final class StoneAbilityCooldowns {
     private static final Map<String, Integer> HOLD_RATE = new HashMap<>();
 
     private static final String NBT_ROOT = "egm_cd";
+    private static final String NBT_COOLDOWNS_DISABLED = "egm_cooldowns_disabled";
+    
+    private static boolean cooldownsDisabled = false;
 
     static {
         // ===== POWER =====
@@ -75,9 +78,24 @@ public final class StoneAbilityCooldowns {
         return HOLD_RATE.getOrDefault(key(stoneKey, abilityKey), 0);
     }
 
+    // ---------- Cooldown toggle management ----------
+    public static boolean areCooldownsDisabled() {
+        return cooldownsDisabled;
+    }
+    
+    public static void setCooldownsDisabled(boolean disabled) {
+        cooldownsDisabled = disabled;
+    }
+    
+    public static void toggleCooldowns() {
+        cooldownsDisabled = !cooldownsDisabled;
+    }
+
     // ---------- Main apply (writes player gate + overlay on current container) ----------
     /** Preferred: pass the stone stack so we can pick the right overlay target and always set the player gate. */
     public static void apply(Player player, ItemStack stoneStack, String stoneKey, IGStoneAbility ability) {
+        if (cooldownsDisabled) return; // Skip all cooldowns if disabled
+        
         final String aKey = ability.abilityKey();
         final Item cdItem = pickCooldownItem(player, stoneStack);
         final int base = cooldown(stoneKey, aKey);
@@ -92,6 +110,8 @@ public final class StoneAbilityCooldowns {
 
     /** Back-compat: allow existing call sites to pass the Item (overlay target). Also sets the player gate. */
     public static void apply(Player player, Item cooldownItem, String stoneKey, String abilityKey) {
+        if (cooldownsDisabled) return; // Skip all cooldowns if disabled
+        
         final int base = cooldown(stoneKey, abilityKey);
         final int ticks = scaleForContainer(base, cooldownItem);
         if (ticks <= 0) return;
@@ -110,6 +130,8 @@ public final class StoneAbilityCooldowns {
     // ---------- Use guard (block + re-sync overlay if moving between containers) ----------
     /** Return true to block use; also re-syncs overlay to the current container if cooling. */
     public static boolean guardUse(Player player, ItemStack stoneStack, String stoneKey, IGStoneAbility ability) {
+        if (cooldownsDisabled) return false; // Never block if cooldowns are disabled
+        
         int left = remaining(player, stoneKey, ability.abilityKey());
         if (left <= 0) return false;
         Item cdItem = pickCooldownItem(player, stoneStack);

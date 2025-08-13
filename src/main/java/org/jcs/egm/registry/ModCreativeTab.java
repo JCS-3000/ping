@@ -25,6 +25,9 @@ public class ModCreativeTab {
                                         output.accept(item.get());
                                     }
                                 });
+                                // Add block items
+                                output.accept(ModBlocks.URU_BLOCK_ITEM.get());
+                                output.accept(ModBlocks.TRAPPED_STARLIGHT_ITEM.get());
                             })
                             .build()
             );

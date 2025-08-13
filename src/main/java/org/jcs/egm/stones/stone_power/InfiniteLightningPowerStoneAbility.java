@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jcs.egm.entity.PowerStoneLightningEntity;
+import org.jcs.egm.particles.ChargingParticleHelper;
 import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
@@ -70,7 +71,7 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
 
         // --- CHARGING PHASE ---
         if (ticksHeld < chargeTicks) {
-            if (level.isClientSide && ticksHeld % 4 == 0) spawnChargeParticles(level, player);
+            if (level.isClientSide && ticksHeld % 4 == 0) ChargingParticleHelper.spawnPowerSuckInParticles(level, player);
             if (level.isClientSide) {
                 if (!chargingSoundPlayers.contains(uuid)) {
                     player.level().playLocalSound(player.getX(), player.getY(), player.getZ(),
@@ -314,21 +315,4 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
         }
     }
 
-    private void spawnChargeParticles(Level level, Player player) {
-        Vec3 gauntletPos = player.position().add(0, 1.0, 0);
-        net.minecraft.util.RandomSource rand = level.getRandom();
-        int numParticles = 14;
-        double outerRadius = 2.2;
-        for (int i = 0; i < numParticles; i++) {
-            double theta = rand.nextDouble() * 2 * Math.PI;
-            double phi = Math.acos(2 * rand.nextDouble() - 1);
-            double x = outerRadius * Math.sin(phi) * Math.cos(theta);
-            double y = outerRadius * Math.sin(phi) * Math.sin(theta);
-            double z = outerRadius * Math.cos(phi);
-            Vec3 start = gauntletPos.add(x, y, z);
-            Vec3 velocity = gauntletPos.subtract(start).normalize().scale(0.22 + rand.nextDouble() * 0.12);
-            level.addParticle(ModParticles.POWER_STONE_EFFECT_TWO.get(),
-                    start.x, start.y, start.z, velocity.x, velocity.y, velocity.z);
-        }
-    }
 }

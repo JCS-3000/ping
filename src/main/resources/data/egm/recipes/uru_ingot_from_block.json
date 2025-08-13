@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "group": "uru_ingot",
+  "ingredients": [
+    {
+      "item": "egm:uru_block"
+    }
+  ],
+  "result": {
+    "item": "egm:ingot_uru",
+    "count": 9
+  }
+}

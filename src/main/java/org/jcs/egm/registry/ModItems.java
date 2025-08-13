@@ -59,7 +59,14 @@ public class ModItems {
     // URU
     public static final RegistryObject<Item> INGOT_URU = ITEMS.register("ingot_uru",
             () -> new Item(new Item.Properties()
-                    .rarity(Rarity.UNCOMMON)
+                    .rarity(Rarity.EPIC)
+                    .stacksTo(64)
+            ));
+
+    // STARLIGHT CHUNK - Rare material from Trapped Starlight
+    public static final RegistryObject<Item> STARLIGHT_CHUNK = ITEMS.register("starlight_chunk",
+            () -> new Item(new Item.Properties()
+                    .rarity(Rarity.RARE)
                     .stacksTo(64)
             ));
 

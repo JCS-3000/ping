@@ -10,11 +10,8 @@ import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import org.jcs.egm.client.particle.*;
 import org.jcs.egm.egm;
-import org.jcs.egm.client.particle.PowerStoneEffectOne;
-import org.jcs.egm.client.particle.RealityStoneEffectOne;
-import org.jcs.egm.client.particle.SoulStoneEffectOne;
-import org.jcs.egm.client.particle.TimeStoneEffectOne;
 import org.jcs.egm.client.render.MeteorRenderer;
 import org.jcs.egm.client.render.PowerStoneLightningRenderer;
 import org.jcs.egm.client.render.SingularityRenderer;
@@ -139,21 +136,7 @@ public class ClientSetup {
     }
 
     @SubscribeEvent
-    public static void registerParticles(RegisterParticleProvidersEvent event) {
-        // Reality
-        event.registerSpriteSet(ModParticles.REALITY_STONE_EFFECT_ONE.get(), RealityStoneEffectOne.Provider::new);
-        // Power
-        event.registerSpriteSet(ModParticles.POWER_STONE_EFFECT_ONE.get(), PowerStoneEffectOne.Provider::new);
-        event.registerSpriteSet(ModParticles.POWER_STONE_EFFECT_TWO.get(), PowerStoneEffectOne.Provider::new);
-        // Time
-        event.registerSpriteSet(ModParticles.TIME_STONE_EFFECT_ONE.get(), TimeStoneEffectOne.Provider::new);
-        // Soul
-        event.registerSpriteSet(ModParticles.SOUL_STONE_EFFECT_ONE.get(), SoulStoneEffectOne.Provider::new);
-        // UNIVERSAL
-        event.registerSpriteSet(ModParticles.UNIVERSAL_PARTICLE_ONE.get(), org.jcs.egm.client.particle.UniversalTintParticle.Provider::new);
-        event.registerSpriteSet(ModParticles.UNIVERSAL_PARTICLE_TWO.get(), org.jcs.egm.client.particle.UniversalTintParticle.Provider::new);
-        event.registerSpriteSet(ModParticles.UNIVERSAL_PARTICLE_THREE.get(), org.jcs.egm.client.particle.UniversalTintParticle.Provider::new);
-        event.registerSpriteSet(ModParticles.UNIVERSAL_PARTICLE_FOUR.get(), org.jcs.egm.client.particle.UniversalTintParticle.Provider::new);
-
+    public static void onRegisterParticleProviders(final RegisterParticleProvidersEvent event) {
+        ClientParticles.register(event);
     }
 }

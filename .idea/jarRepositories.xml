@@ -41,5 +41,10 @@
       <option name="name" value="GeckoLib" />
       <option name="url" value="https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="JEI" />
+      <option name="name" value="JEI" />
+      <option name="url" value="https://maven.blamejared.com" />
+    </remote-repository>
   </component>
 </project>

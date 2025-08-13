@@ -1,0 +1,12 @@
+{
+  "type": "forge:add_features",
+  "biomes": [
+    "minecraft:the_end",
+    "minecraft:end_highlands",
+    "minecraft:end_midlands",
+    "minecraft:small_end_islands",
+    "minecraft:end_barrens"
+  ],
+  "features": "egm:trapped_starlight_ore",
+  "step": "underground_ores"
+}

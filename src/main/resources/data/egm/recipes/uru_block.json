@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "UUU",
+    "UUU",
+    "UUU"
+  ],
+  "key": {
+    "U": {
+      "item": "egm:ingot_uru"
+    }
+  },
+  "result": {
+    "item": "egm:uru_block",
+    "count": 1
+  }
+}

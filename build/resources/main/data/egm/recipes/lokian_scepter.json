@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "UUU",
+    "UMU",
+    "UUU"
+  ],
+  "key": {
+    "U": {
+      "item": "egm:ingot_uru"
+    },
+    "M": {
+      "item": "egm:mind_stone"
+    }
+  },
+  "result": {
+    "item": "egm:lokian_scepter",
+    "count": 1
+  }
+}
