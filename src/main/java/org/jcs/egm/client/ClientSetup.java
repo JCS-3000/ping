@@ -51,6 +51,10 @@ public class ClientSetup {
                     ModMenuTypes.STONE_HOLDER.get(),
                     StoneHolderScreen::new
             );
+            MenuScreens.register(
+                    ModMenuTypes.NIDAVELLIRIAN_FORGE_MENU.get(),
+                    NidavelliranForgeScreen::new
+            );
 
             // Infinity Gauntlet and Holder: stone_bitmask predicate (uses StoneBitmask NBT)
             ItemProperties.register(

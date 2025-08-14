@@ -26,6 +26,7 @@ public class egm {
         ModCreativeTab.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModBlocks.BLOCKS.register(modEventBus);
+        ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModMenuTypes.MENUS.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
         ModParticles.PARTICLES.register(modEventBus);

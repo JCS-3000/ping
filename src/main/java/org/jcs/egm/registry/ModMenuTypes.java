@@ -8,6 +8,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.jcs.egm.egm;
 import org.jcs.egm.gauntlet.InfinityGauntletMenu;
+import org.jcs.egm.gui.NidavelliranForgeMenu;
 import org.jcs.egm.holders.StoneHolderMenu;
 
 public class ModMenuTypes {
@@ -28,5 +29,10 @@ public class ModMenuTypes {
                         ItemStack stack = buf.readItem();
                         return new StoneHolderMenu(id, inv, stack);
                     })
+            );
+
+    public static final RegistryObject<MenuType<NidavelliranForgeMenu>> NIDAVELLIRIAN_FORGE_MENU =
+            MENUS.register("nidavellirian_forge", () ->
+                    IForgeMenuType.create(NidavelliranForgeMenu::new)
             );
 }

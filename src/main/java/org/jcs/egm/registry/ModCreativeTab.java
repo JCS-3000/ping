@@ -28,6 +28,7 @@ public class ModCreativeTab {
                                 // Add block items
                                 output.accept(ModBlocks.URU_BLOCK_ITEM.get());
                                 output.accept(ModBlocks.TRAPPED_STARLIGHT_ITEM.get());
+                                output.accept(ModBlocks.NIDAVELLIRIAN_FORGE_ITEM.get());
                             })
                             .build()
             );

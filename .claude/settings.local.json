@@ -4,8 +4,10 @@
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(./gradlew:*)",
       "Bash(cp:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(mv:*)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }

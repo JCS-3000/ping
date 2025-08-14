@@ -12,6 +12,7 @@ import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+import org.jcs.egm.blocks.NidavelliranForgeBlock;
 import org.jcs.egm.blocks.TrappedStarlightBlock;
 import org.jcs.egm.egm;
 
@@ -37,12 +38,23 @@ public class ModBlocks {
                     .strength(3.0F, 3.0F) // Similar to diamond ore mining speed
                     .sound(SoundType.STONE)));
 
+    // NIDAVELLIRIAN FORGE - Special crafting forge with GUI
+    public static final RegistryObject<Block> NIDAVELLIRIAN_FORGE = BLOCKS.register("nidavellirian_forge",
+            () -> new NidavelliranForgeBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0F, 1200.0F)
+                    .sound(SoundType.ANVIL)));
+
     // Block items
     public static final RegistryObject<Item> URU_BLOCK_ITEM = registerBlockItem("uru_block", URU_BLOCK, 
             () -> new Item.Properties().rarity(Rarity.EPIC));
     
     public static final RegistryObject<Item> TRAPPED_STARLIGHT_ITEM = registerBlockItem("trapped_starlight", TRAPPED_STARLIGHT, 
             () -> new Item.Properties().rarity(Rarity.RARE));
+
+    public static final RegistryObject<Item> NIDAVELLIRIAN_FORGE_ITEM = registerBlockItem("nidavellirian_forge", NIDAVELLIRIAN_FORGE, 
+            () -> new Item.Properties().rarity(Rarity.UNCOMMON));
 
     // Helper method to register block items
     private static <T extends Block> RegistryObject<Item> registerBlockItem(String name, RegistryObject<T> block, Supplier<Item.Properties> properties) {

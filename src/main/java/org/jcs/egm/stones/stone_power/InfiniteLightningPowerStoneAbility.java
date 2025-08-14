@@ -87,17 +87,8 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
             return;
         }
 
-        // --- FIRING PHASE (rate-limited) ---
-        int interval = Math.max(1, StoneAbilityCooldowns.holdInterval(stone, ability));
-        long now = level.getGameTime();
-        Long last = lastShotGameTime.get(uuid);
-        if (last != null && now - last < interval) {
-            // Still update/keep beam visuals server-side for smoothness
-            if (!level.isClientSide) updateBeamOnly(level, player, uuid);
-            return;
-        }
-        lastShotGameTime.put(uuid, now);
-
+        // --- FIRING PHASE ---
+        // Handle firing sound every tick (client-side)
         if (level.isClientSide) {
             if (chargingSoundPlayers.contains(uuid)) {
                 Minecraft.getInstance().getSoundManager().stop(CHARGING_SOUND.getLocation(), SoundSource.PLAYERS);
@@ -114,10 +105,25 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
                 firingSoundPlayers.add(uuid);
                 firingSoundStartTick.put(uuid, currentTick);
             }
-            return;
         }
 
-        // ---- Server: raycast, damage/mining, and beam update ----
+        // Rate-limited server-side logic
+        int interval = Math.max(1, StoneAbilityCooldowns.holdInterval(stone, ability));
+        long now = level.getGameTime();
+        Long last = lastShotGameTime.get(uuid);
+        if (last != null && now - last < interval) {
+            // Still update/keep beam visuals for smoothness (both sides)
+            updateBeamOnly(level, player, uuid);
+            // Continue bedrock breaking even during rate-limited intervals (server only)
+            if (!level.isClientSide) {
+                updateContinuousEffects(level, player, uuid);
+            }
+            return;
+        }
+        lastShotGameTime.put(uuid, now);
+
+        // ---- Raycast, damage/mining, and beam update ----
+        // Server side handles logic, both sides handle beam rendering
         fireOneInterval(level, player, uuid);
     }
 
@@ -138,6 +144,9 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
         if (!level.isClientSide) {
             PowerStoneLightningEntity beam = activeBeams.remove(uuid);
             if (beam != null && beam.isAlive()) beam.discard();
+        } else {
+            // Client side: just clear the reference
+            activeBeams.remove(uuid);
         }
 
         // Clear per-use state
@@ -186,9 +195,8 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
 
                 // Bedrock special handling
                 if (blockState.getBlock() == Blocks.BEDROCK) {
-                    int prev = bedrockHitTicks.getOrDefault(uuid, 0) + 1;
-                    bedrockHitTicks.put(uuid, prev);
-
+                    // Visual and audio effects for bedrock (breaking counter is in updateContinuousEffects)
+                    int prev = bedrockHitTicks.getOrDefault(uuid, 0);
                     if (prev % 4 == 0 && level instanceof ServerLevel serverLevel) {
                         double soundRange = 16.0;
                         for (ServerPlayer sp : serverLevel.players()) {
@@ -198,10 +206,6 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
                         }
                     }
                     level.levelEvent(2001, blockPos, Block.getId(blockState));
-                    if (prev >= BEDROCK_BREAK_TICKS) {
-                        level.destroyBlock(blockPos, true, player);
-                        bedrockHitTicks.remove(uuid);
-                    }
                 } else {
                     // Generic block “mining” over time
                     float resistance = blockState.getBlock().getExplosionResistance();
@@ -282,14 +286,18 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
             renderEnd = renderStart;
         }
 
-        PowerStoneLightningEntity beam = activeBeams.get(uuid);
-        if (beam == null || !beam.isAlive()) {
-            beam = new PowerStoneLightningEntity(ModEntities.POWER_STONE_LIGHTNING.get(), level);
-            level.addFreshEntity(beam);
-            activeBeams.put(uuid, beam);
+        // Only create and manage beam entities on server side
+        if (!level.isClientSide) {
+            PowerStoneLightningEntity beam = activeBeams.get(uuid);
+            if (beam == null || !beam.isAlive()) {
+                beam = new PowerStoneLightningEntity(ModEntities.POWER_STONE_LIGHTNING.get(), level);
+                level.addFreshEntity(beam);
+                activeBeams.put(uuid, beam);
+            }
+            beam.setEndpoints(renderStart, renderEnd);
         }
-        beam.setEndpoints(renderStart, renderEnd);
 
+        // Server-side particle effects
         if (level instanceof ServerLevel serverLevel) {
             Vec3 beamVec = renderEnd.subtract(renderStart);
             double beamLength = beamVec.length();
@@ -312,6 +320,36 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
     private void sendBlockBreakAnim(Player player, BlockPos pos, int progress) {
         if (player instanceof ServerPlayer sp) {
             sp.connection.send(new ClientboundBlockDestructionPacket(sp.getId(), pos, progress));
+        }
+    }
+
+    private void updateContinuousEffects(Level level, Player player, UUID uuid) {
+        // Simplified raycast just for bedrock breaking counter
+        Vec3 eye = player.position().add(0, player.getEyeHeight(player.getPose()), 0);
+        Vec3 look = player.getLookAngle();
+        double range = 30.0D;
+        double step = 0.5D;
+
+        for (double d = 0; d <= range; d += step) {
+            Vec3 pos = eye.add(look.scale(d));
+            BlockPos blockPos = BlockPos.containing(pos);
+            BlockState blockState = level.getBlockState(blockPos);
+
+            if (!blockState.isAir() && blockState.getBlock() != Blocks.WATER && blockState.getBlock() != Blocks.BUBBLE_COLUMN) {
+                // Only handle bedrock breaking counter (every tick)
+                if (blockState.getBlock() == Blocks.BEDROCK) {
+                    int prev = bedrockHitTicks.getOrDefault(uuid, 0) + 1;
+                    bedrockHitTicks.put(uuid, prev);
+
+                    // Check if bedrock should break
+                    if (prev >= BEDROCK_BREAK_TICKS) {
+                        level.destroyBlock(blockPos, true, player);
+                        bedrockHitTicks.remove(uuid);
+                    }
+                    return; // Found bedrock, stop checking
+                }
+                break; // Found a non-bedrock block, stop checking
+            }
         }
     }
 

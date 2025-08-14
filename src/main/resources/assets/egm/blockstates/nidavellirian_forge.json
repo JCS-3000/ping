@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "egm:block/nidavellirian_forge"
+    },
+    "facing=south": {
+      "model": "egm:block/nidavellirian_forge",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "egm:block/nidavellirian_forge",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "egm:block/nidavellirian_forge",
+      "y": 90
+    }
+  }
+}
