@@ -88,6 +88,22 @@ public class ChargingParticleHelper {
         spawnSuckInParticles(level, player, ModParticles.CHARGING_PARTICLE_SPACE.get(), 20, 2.8);
     }
     
+    // ===== SOUL STONE CHARGING PARTICLES =====
+    
+    /**
+     * Spawns Soul Stone charging particles with default parameters.
+     */
+    public static void spawnSoulSuckInParticles(Level level, Player player) {
+        spawnSuckInParticles(level, player, ModParticles.CHARGING_PARTICLE_SOUL.get(), 14, 2.2);
+    }
+    
+    /**
+     * Spawns intense Soul Stone charging particles for powerful abilities.
+     */
+    public static void spawnIntenseSoulSuckInParticles(Level level, Player player) {
+        spawnSuckInParticles(level, player, ModParticles.CHARGING_PARTICLE_SOUL.get(), 20, 2.8);
+    }
+    
     // ===== LEGACY METHODS (for backward compatibility) =====
     
     /**

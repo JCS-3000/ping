@@ -104,6 +104,10 @@ public class ModEvents {
         if (player.hasEffect(ModEffects.EMPOWERED_PUNCH.get()) && target instanceof LivingEntity livingTarget) {
             Level level = player.level();
             
+            // Play power punch sound immediately
+            level.playSound(null, player.blockPosition(), POWER_PUNCH_SOUND, 
+                    SoundSource.PLAYERS, 1.0F, 1.0F);
+            
             // Remove the effect immediately after use
             player.removeEffect(ModEffects.EMPOWERED_PUNCH.get());
             
@@ -126,10 +130,6 @@ public class ModEvents {
                 serverLevel.sendParticles(ModParticles.POWER_STONE_EFFECT_ONE.get(),
                         impactPos.x, impactPos.y, impactPos.z, 30, 0.5, 0.5, 0.5, 0.2);
             }
-            
-            // Play power punch sound
-            level.playSound(null, livingTarget.blockPosition(), POWER_PUNCH_SOUND, 
-                    SoundSource.PLAYERS, 1.0F, 1.0F);
             
             // Cancel the normal attack to prevent double damage
             event.setCanceled(true);

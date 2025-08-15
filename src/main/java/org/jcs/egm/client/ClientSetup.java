@@ -15,6 +15,7 @@ import org.jcs.egm.egm;
 import org.jcs.egm.client.render.MeteorRenderer;
 import org.jcs.egm.client.render.PowerStoneLightningRenderer;
 import org.jcs.egm.client.render.SingularityRenderer;
+import org.jcs.egm.client.render.SoulBeamRenderer;
 import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.registry.ModItems;
 import org.jcs.egm.registry.ModMenuTypes;
@@ -41,6 +42,10 @@ public class ClientSetup {
         EntityRenderers.register(
                 ModEntities.METEOR.get(),
                 MeteorRenderer::new
+        );
+        EntityRenderers.register(
+                ModEntities.SOUL_BEAM.get(),
+                SoulBeamRenderer::new
         );
         event.enqueueWork(() -> {
             MenuScreens.register(
@@ -136,6 +141,7 @@ public class ClientSetup {
         public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
             event.registerEntityRenderer(ModEntities.SINGULARITY.get(), SingularityRenderer::new);
             event.registerEntityRenderer(ModEntities.METEOR.get(), MeteorRenderer::new);
+            event.registerEntityRenderer(ModEntities.SOUL_BEAM.get(), SoulBeamRenderer::new);
         }
     }
 

@@ -44,6 +44,7 @@ public final class StoneAbilityCooldowns {
         // ===== SOUL =====
         set("soul","passive_totem").cooldown(12000);
         set("soul","soul_banish").cooldown(360);
+        set("soul","life_drain").cooldown(480).chargeup(40).holdInterval(20);
 
         // ===== SPACE =====
         set("space","enderic_beam").cooldown(360);

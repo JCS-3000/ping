@@ -1,6 +1,7 @@
 {
   "power_stone_charging": { "category": "players", "sounds": [{ "name": "egm:power_stone_charging" }] },
   "power_stone_firing": { "category": "players", "sounds": [{ "name": "egm:power_stone_firing" }] },
+  "soul_stone_firing": { "category": "players", "sounds": [{ "name": "egm:soul_stone_firing" }] },
   "power_stone_explosion": { "category": "players", "sounds": [{ "name": "egm:power_stone_explosion" }] },
   "reality_firing": { "category": "players", "sounds": [{ "name": "egm:reality_firing" }] },
   "gauntlet_assembled": { "category": "players", "sounds": [{ "name": "egm:gauntlet_assembled" }] },

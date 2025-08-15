@@ -9,6 +9,7 @@ import org.jcs.egm.egm;
 import org.jcs.egm.entity.MeteorEntity;
 import org.jcs.egm.entity.PowerStoneLightningEntity;
 import org.jcs.egm.entity.SingularityEntity;
+import org.jcs.egm.entity.SoulBeamEntity;
 import org.jcs.egm.entity.TimeBubbleFieldEntity;
 
 public class ModEntities {
@@ -45,5 +46,12 @@ public class ModEntities {
                             .clientTrackingRange(128)
                             .updateInterval(1)
                             .build("meteor"));
+
+    public static final RegistryObject<EntityType<SoulBeamEntity>> SOUL_BEAM =
+            ENTITIES.register("soul_beam",
+                    () -> EntityType.Builder.of(SoulBeamEntity::new, MobCategory.MISC)
+                            .sized(0.2f, 0.2f)
+                            .clientTrackingRange(128)
+                            .build("soul_beam"));
 
 }

@@ -7,12 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SoulStoneAbilityRegistry {
-    // Only one ability for now: Soul Bind
     public static final IGStoneAbility SOUL_BANISH = new SoulBanishSoulStoneAbility();
+    public static final IGStoneAbility LIFE_DRAIN = new LifeDrainSoulStoneAbility();
 
     private static final List<IGStoneAbility> ABILITIES = new ArrayList<>();
     static {
         ABILITIES.add(SOUL_BANISH);
+        ABILITIES.add(LIFE_DRAIN);
     }
 
     public static List<IGStoneAbility> getAbilities() {
@@ -22,6 +23,7 @@ public class SoulStoneAbilityRegistry {
     public static List<Component> getAbilityNames() {
         List<Component> names = new ArrayList<>();
         names.add(Component.literal("Banish Soul"));
+        names.add(Component.literal("Life Drain"));
         return names;
     }
 
