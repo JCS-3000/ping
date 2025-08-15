@@ -24,17 +24,17 @@ public class ModItems {
 
     // THE STONES (now each is its own class!)
     public static final RegistryObject<Item> MIND_STONE =
-            ITEMS.register("mind_stone", () -> new MindStoneItem(new Item.Properties().stacksTo(1)));
+            ITEMS.register("mind_stone", () -> new MindStoneItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
     public static final RegistryObject<Item> POWER_STONE =
-            ITEMS.register("power_stone", () -> new PowerStoneItem(new Item.Properties().stacksTo(1)));
+            ITEMS.register("power_stone", () -> new PowerStoneItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
     public static final RegistryObject<Item> SPACE_STONE =
-            ITEMS.register("space_stone", () -> new SpaceStoneItem(new Item.Properties().stacksTo(1)));
+            ITEMS.register("space_stone", () -> new SpaceStoneItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
     public static final RegistryObject<Item> REALITY_STONE =
-            ITEMS.register("reality_stone", () -> new RealityStoneItem(new Item.Properties().stacksTo(1)));
+            ITEMS.register("reality_stone", () -> new RealityStoneItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
     public static final RegistryObject<Item> TIME_STONE =
-            ITEMS.register("time_stone", () -> new TimeStoneItem(new Item.Properties().stacksTo(1)));
+            ITEMS.register("time_stone", () -> new TimeStoneItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
     public static final RegistryObject<Item> SOUL_STONE =
-            ITEMS.register("soul_stone", () -> new SoulStoneItem(new Item.Properties().stacksTo(1)));
+            ITEMS.register("soul_stone", () -> new SoulStoneItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
 
     // THE GAUNTLET
     public static final RegistryObject<Item> INFINITY_GAUNTLET =
@@ -45,17 +45,17 @@ public class ModItems {
 
     // STONE HOLDERS
     public static final RegistryObject<Item> MIND_STONE_HOLDER =
-            ITEMS.register("lokian_scepter", () -> new LokianScepterItem(new Item.Properties().stacksTo(1)));
+            ITEMS.register("lokian_scepter", () -> new LokianScepterItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
     public static final RegistryObject<Item> POWER_STONE_HOLDER =
-            ITEMS.register("kree_warhammer", () -> new KreeWarhammerItem(new Item.Properties().stacksTo(1)));
+            ITEMS.register("kree_warhammer", () -> new KreeWarhammerItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
     public static final RegistryObject<Item> SPACE_STONE_HOLDER =
-            ITEMS.register("tesseract", () -> new StoneHolderItem("space", new Item.Properties().stacksTo(1)));
+            ITEMS.register("tesseract", () -> new StoneHolderItem("space", new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
     public static final RegistryObject<Item> REALITY_STONE_HOLDER =
-            ITEMS.register("aether", () -> new StoneHolderItem("reality", new Item.Properties().stacksTo(1)));
+            ITEMS.register("aether", () -> new StoneHolderItem("reality", new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
     public static final RegistryObject<Item> SOUL_STONE_HOLDER =
-            ITEMS.register("red_skull", () -> new StoneHolderItem("soul", new Item.Properties().stacksTo(1)));
+            ITEMS.register("red_skull", () -> new StoneHolderItem("soul", new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
     public static final RegistryObject<Item> TIME_STONE_HOLDER =
-            ITEMS.register("eye_of_agamotto", () -> new StoneHolderItem("time", new Item.Properties().stacksTo(1)));
+            ITEMS.register("eye_of_agamotto", () -> new StoneHolderItem("time", new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
 
 
     // URU

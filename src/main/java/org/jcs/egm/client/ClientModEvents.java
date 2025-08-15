@@ -19,17 +19,34 @@ import org.jcs.egm.network.OpenStoneHolderMenuPacket;
 import org.jcs.egm.registry.ModItems;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.StoneItem;
+import org.jcs.egm.registry.ModEffects;
+import org.jcs.egm.stones.StoneAbilityRegistries;
+import org.jcs.egm.stones.stone_power.EmpoweredPunchPowerStoneAbility;
+import org.jcs.egm.stones.stone_power.PowerStoneItem;
 
 @Mod.EventBusSubscriber(modid = "egm", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class ClientModEvents {
 
+    private static int particleTick = 0;
+
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
-            if (InfinityKeybinds.OPEN_STONE_MENU.consumeClick()) {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc.player != null) {
-                    ItemStack mainHand = mc.player.getMainHandItem();
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player != null) {
+                ItemStack mainHand = mc.player.getMainHandItem();
+                
+                // Check for empowered punch particles (every 2 ticks)
+                particleTick++;
+                if (particleTick % 2 == 0) {
+                    if (mc.player.hasEffect(ModEffects.EMPOWERED_PUNCH.get())) {
+                        // Show empowered punch effect particles around the player
+                        var empoweredPunch = new EmpoweredPunchPowerStoneAbility();
+                        empoweredPunch.spawnChargedParticlesPublic(mc.level, mc.player);
+                    }
+                }
+                
+                if (InfinityKeybinds.OPEN_STONE_MENU.consumeClick()) {
                     if (!mainHand.isEmpty()) {
                         if (mainHand.getItem() == ModItems.INFINITY_GAUNTLET.get()) {
                             NetworkHandler.INSTANCE.sendToServer(new OpenGauntletMenuPacket());

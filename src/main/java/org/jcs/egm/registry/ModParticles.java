@@ -26,10 +26,11 @@ public class ModParticles {
             PARTICLES.register("charging_particle_power", () -> new SimpleParticleType(true));
     public static final RegistryObject<SimpleParticleType> CHARGING_PARTICLE_SPACE =
             PARTICLES.register("charging_particle_space", () -> new SimpleParticleType(true));
-    
-    // Keep the original POWER_STONE_EFFECT_TWO for backward compatibility
-    public static final RegistryObject<SimpleParticleType> POWER_STONE_EFFECT_TWO =
-            PARTICLES.register("power_stone_effect_two", () -> new SimpleParticleType(true));
+    public static final RegistryObject<SimpleParticleType> CHARGING_PARTICLE_SOUL =
+            PARTICLES.register("charging_particle_soul", () -> new SimpleParticleType(true));
+    public static final RegistryObject<SimpleParticleType> CHARGING_PARTICLE_MIND =
+            PARTICLES.register("charging_particle_mind", () -> new SimpleParticleType(true));
+
 
     public static final RegistryObject<SimpleParticleType> UNIVERSAL_PARTICLE_ONE =
             PARTICLES.register("universal_particle_one", () -> new SimpleParticleType(false));

@@ -3,7 +3,7 @@ Implementation-Title: end-game-mod
 Implementation-Version: 1.0.0
 Specification-Vendor: JCS
 Specification-Title: egm
-Implementation-Timestamp: 2025-08-13T20:20:24-0400
+Implementation-Timestamp: 2025-08-14T20:40:05-0400
 Specification-Version: 1
 Implementation-Vendor: JCS
 

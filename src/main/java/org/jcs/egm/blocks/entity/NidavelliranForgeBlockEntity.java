@@ -31,21 +31,34 @@ public class NidavelliranForgeBlockEntity extends BlockEntity implements MenuPro
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
-            // Trigger crafting check when inputs change
-            if (slot < 3) {
-                checkAndCraft();
-            }
         }
 
         @Override
         public boolean isItemValid(int slot, @NotNull ItemStack stack) {
-            // Slots 0, 1, 2 are inputs, slot 3 is output
-            return slot < 3; // Only allow items in input slots
+            if (slot >= 3) return false; // Output slot
+            
+            switch (slot) {
+                case 0: // Left slot - pottery sherds only
+                    return isPotterySherd(stack);
+                case 1: // Right slot - other recipe items only  
+                    return isOtherRecipeItem(stack);
+                case 2: // Bottom slot - stones only
+                    return isStone(stack);
+                default:
+                    return false;
+            }
         }
 
         @Override
         public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
-            // Allow extraction from all slots
+            // When extracting from output slot, trigger crafting consumption
+            if (slot == 3 && !simulate) {
+                ItemStack outputStack = getStackInSlot(3);
+                if (!outputStack.isEmpty()) {
+                    // Consume ingredients only when actually taking the output
+                    consumeIngredientsForCrafting();
+                }
+            }
             return super.extractItem(slot, amount, simulate);
         }
     };
@@ -100,56 +113,125 @@ public class NidavelliranForgeBlockEntity extends BlockEntity implements MenuPro
         if (level.isClientSide()) {
             return;
         }
-        // Crafting is instant and handled in onContentsChanged
+        
+        // Update output slot display without auto-crafting
+        updateOutputDisplay();
     }
-
-    private void checkAndCraft() {
+    
+    private void updateOutputDisplay() {
         if (level == null || level.isClientSide()) {
             return;
         }
 
-        // Get input items
-        ItemStack input1 = itemHandler.getStackInSlot(0);
-        ItemStack input2 = itemHandler.getStackInSlot(1);
-        ItemStack input3 = itemHandler.getStackInSlot(2);
+        // Get input items - slot positions are now enforced
+        ItemStack potterySherd = itemHandler.getStackInSlot(0); // Left slot
+        ItemStack otherItem = itemHandler.getStackInSlot(1);    // Right slot
+        ItemStack stone = itemHandler.getStackInSlot(2);        // Bottom slot
         ItemStack currentOutput = itemHandler.getStackInSlot(3);
 
-        // Simple example crafting logic - you can customize this
-        ItemStack craftResult = getCraftingResult(input1, input2, input3);
+        // Check what can be crafted
+        ItemStack craftResult = getCraftingResult(potterySherd, otherItem, stone);
 
-        if (!craftResult.isEmpty()) {
-            // Check if output slot can accept the result
-            if (currentOutput.isEmpty() || 
-                (currentOutput.getItem() == craftResult.getItem() && 
-                 currentOutput.getCount() + craftResult.getCount() <= currentOutput.getMaxStackSize())) {
-                
-                // Perform crafting
-                if (currentOutput.isEmpty()) {
-                    itemHandler.setStackInSlot(3, craftResult.copy());
-                } else {
-                    currentOutput.grow(craftResult.getCount());
-                }
-
-                // Consume inputs (1 from each input slot)
-                if (!input1.isEmpty()) input1.shrink(1);
-                if (!input2.isEmpty()) input2.shrink(1);
-                if (!input3.isEmpty()) input3.shrink(1);
-            }
-        } else if (!currentOutput.isEmpty()) {
+        // Only show the result in the output slot, don't actually craft
+        if (!craftResult.isEmpty() && currentOutput.isEmpty()) {
+            itemHandler.setStackInSlot(3, craftResult.copy());
+        } else if (craftResult.isEmpty() && !currentOutput.isEmpty()) {
             // Clear output if no valid recipe
-            // This allows manual removal of items
+            itemHandler.setStackInSlot(3, ItemStack.EMPTY);
         }
     }
 
-    private ItemStack getCraftingResult(ItemStack input1, ItemStack input2, ItemStack input3) {
-        // Red Skull Recipe: Wither Skeleton Skull + Totem of Undying + Beetroot Stew
-        if (isItem(input1, Items.WITHER_SKELETON_SKULL) && 
-            isItem(input2, Items.TOTEM_OF_UNDYING) && 
-            isItem(input3, Items.BEETROOT_SOUP)) {
+    private void consumeIngredientsForCrafting() {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+
+        // Get input items - slot positions are now enforced
+        ItemStack potterySherd = itemHandler.getStackInSlot(0); // Left slot
+        ItemStack otherItem = itemHandler.getStackInSlot(1);    // Right slot  
+        ItemStack stone = itemHandler.getStackInSlot(2);        // Bottom slot
+
+        // Check if crafting is valid
+        ItemStack craftResult = getCraftingResult(potterySherd, otherItem, stone);
+
+        if (!craftResult.isEmpty()) {
+            // Consume only pottery sherd and other item, NOT the stone
+            if (!potterySherd.isEmpty()) potterySherd.shrink(1);
+            if (!otherItem.isEmpty()) otherItem.shrink(1);
+            // Stone is NOT consumed - intentionally left out
+            
+            // The output slot will be cleared automatically by the extraction
+            // Don't manually clear it here since the player is taking the item
+        }
+    }
+    
+    // Helper methods for slot validation
+    private boolean isPotterySherd(ItemStack stack) {
+        return stack.is(Items.DANGER_POTTERY_SHERD) || 
+               stack.is(Items.HEART_POTTERY_SHERD) ||
+               stack.is(Items.PRIZE_POTTERY_SHERD) ||
+               stack.is(Items.MOURNER_POTTERY_SHERD) ||
+               stack.is(Items.EXPLORER_POTTERY_SHERD) ||
+               stack.is(Items.PLENTY_POTTERY_SHERD);
+    }
+    
+    private boolean isOtherRecipeItem(ItemStack stack) {
+        return stack.is(Items.NETHERITE_AXE) ||
+               stack.is(Items.WITHER_SKELETON_SKULL) ||
+               stack.is(Items.ENCHANTED_GOLDEN_APPLE) ||
+               stack.is(Items.VERDANT_FROGLIGHT) ||
+               stack.is(Items.WILD_ARMOR_TRIM_SMITHING_TEMPLATE) ||
+               stack.is(Items.MUSIC_DISC_11);
+    }
+    
+    private boolean isStone(ItemStack stack) {
+        return stack.is(ModItems.POWER_STONE.get()) ||
+               stack.is(ModItems.SOUL_STONE.get()) ||
+               stack.is(ModItems.MIND_STONE.get()) ||
+               stack.is(ModItems.TIME_STONE.get()) ||
+               stack.is(ModItems.SPACE_STONE.get()) ||
+               stack.is(ModItems.REALITY_STONE.get());
+    }
+
+    private ItemStack getCraftingResult(ItemStack potterySherd, ItemStack otherItem, ItemStack stone) {
+        // Power Stone Holder (Kree Warhammer): Danger Pottery Sherd + Netherite Axe + Power Stone
+        if (hasRecipeItems(potterySherd, otherItem, stone, Items.DANGER_POTTERY_SHERD, Items.NETHERITE_AXE, ModItems.POWER_STONE.get())) {
+            return new ItemStack(ModItems.POWER_STONE_HOLDER.get(), 1);
+        }
+        
+        // Soul Stone Holder (Red Skull): Heart Pottery Sherd + Wither Skeleton Skull + Soul Stone
+        if (hasRecipeItems(potterySherd, otherItem, stone, Items.HEART_POTTERY_SHERD, Items.WITHER_SKELETON_SKULL, ModItems.SOUL_STONE.get())) {
             return new ItemStack(ModItems.SOUL_STONE_HOLDER.get(), 1);
         }
         
+        // Mind Stone Holder (Lokian Scepter): Prize Pottery Sherd + Enchanted Golden Apple + Mind Stone
+        if (hasRecipeItems(potterySherd, otherItem, stone, Items.PRIZE_POTTERY_SHERD, Items.ENCHANTED_GOLDEN_APPLE, ModItems.MIND_STONE.get())) {
+            return new ItemStack(ModItems.MIND_STONE_HOLDER.get(), 1);
+        }
+        
+        // Time Stone Holder (Eye of Agamotto): Mourner Pottery Sherd + Verdant Froglight + Time Stone
+        if (hasRecipeItems(potterySherd, otherItem, stone, Items.MOURNER_POTTERY_SHERD, Items.VERDANT_FROGLIGHT, ModItems.TIME_STONE.get())) {
+            return new ItemStack(ModItems.TIME_STONE_HOLDER.get(), 1);
+        }
+        
+        // Space Stone Holder (Tesseract): Explorer Pottery Sherd + Wild Armor Trim Smithing Template + Space Stone
+        if (hasRecipeItems(potterySherd, otherItem, stone, Items.EXPLORER_POTTERY_SHERD, Items.WILD_ARMOR_TRIM_SMITHING_TEMPLATE, ModItems.SPACE_STONE.get())) {
+            return new ItemStack(ModItems.SPACE_STONE_HOLDER.get(), 1);
+        }
+        
+        // Reality Stone Holder (Aether): Plenty Pottery Sherd + Music Disc 11 + Reality Stone
+        if (hasRecipeItems(potterySherd, otherItem, stone, Items.PLENTY_POTTERY_SHERD, Items.MUSIC_DISC_11, ModItems.REALITY_STONE.get())) {
+            return new ItemStack(ModItems.REALITY_STONE_HOLDER.get(), 1);
+        }
+        
         return ItemStack.EMPTY;
+    }
+    
+    private boolean hasRecipeItems(ItemStack potterySherd, ItemStack otherItem, ItemStack stone, 
+                                   net.minecraft.world.item.Item requiredSherd, net.minecraft.world.item.Item requiredOther, net.minecraft.world.item.Item requiredStone) {
+        return !potterySherd.isEmpty() && potterySherd.is(requiredSherd) &&
+               !otherItem.isEmpty() && otherItem.is(requiredOther) &&
+               !stone.isEmpty() && stone.is(requiredStone);
     }
     
     private boolean isItem(ItemStack stack, net.minecraft.world.item.Item item) {

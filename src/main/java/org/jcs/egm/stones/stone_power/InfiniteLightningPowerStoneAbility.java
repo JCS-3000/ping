@@ -189,7 +189,7 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
                 rayHit = pos;
 
                 if (level instanceof ServerLevel serverLevel) {
-                    serverLevel.sendParticles(ModParticles.POWER_STONE_EFFECT_TWO.get(),
+                    serverLevel.sendParticles(ModParticles.POWER_STONE_EFFECT_ONE.get(),
                             rayHit.x, rayHit.y, rayHit.z, 6, 0.1, 0.1, 0.1, 0.02);
                 }
 
@@ -243,7 +243,7 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
                     entity.hurt(level.damageSources().playerAttack(player), 40.0F);
                     if (level instanceof ServerLevel serverLevel) {
                         Vec3 entityPos = entity.position().add(0, entity.getBbHeight() / 2.0, 0);
-                        serverLevel.sendParticles(ModParticles.POWER_STONE_EFFECT_TWO.get(),
+                        serverLevel.sendParticles(ModParticles.POWER_STONE_EFFECT_ONE.get(),
                                 entityPos.x, entityPos.y, entityPos.z, 6, 0.1, 0.1, 0.1, 0.02);
                     }
                     rayHit = entity.position().add(0, entity.getBbHeight() / 2.0, 0);

@@ -30,6 +30,7 @@ public class egm {
         ModMenuTypes.MENUS.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
         ModParticles.PARTICLES.register(modEventBus);
+        ModEffects.register(modEventBus);
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ModCommonConfig.COMMON_CONFIG);
     }
 

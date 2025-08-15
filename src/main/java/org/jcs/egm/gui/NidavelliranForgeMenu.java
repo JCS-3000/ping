@@ -72,8 +72,22 @@ public class NidavelliranForgeMenu extends AbstractContainerMenu {
 
         // Check if the slot clicked is one of the vanilla container slots
         if (index < VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT) {
-            // This is a vanilla container slot so merge the stack into the tile inventory (inputs only)
-            if (!moveItemStackTo(sourceStack, TE_INVENTORY_FIRST_SLOT_INDEX, TE_INVENTORY_FIRST_SLOT_INDEX + 3, false)) {
+            // This is a vanilla container slot so merge the stack into the correct forge slot
+            boolean moved = false;
+            
+            // Try to place in the correct slot based on item type
+            if (isPotterySherd(sourceStack)) {
+                // Pottery sherds go to slot 0 (left)
+                moved = moveItemStackTo(sourceStack, TE_INVENTORY_FIRST_SLOT_INDEX, TE_INVENTORY_FIRST_SLOT_INDEX + 1, false);
+            } else if (isStone(sourceStack)) {
+                // Stones go to slot 2 (bottom)
+                moved = moveItemStackTo(sourceStack, TE_INVENTORY_FIRST_SLOT_INDEX + 2, TE_INVENTORY_FIRST_SLOT_INDEX + 3, false);
+            } else if (isOtherRecipeItem(sourceStack)) {
+                // Other items go to slot 1 (right)
+                moved = moveItemStackTo(sourceStack, TE_INVENTORY_FIRST_SLOT_INDEX + 1, TE_INVENTORY_FIRST_SLOT_INDEX + 2, false);
+            }
+            
+            if (!moved) {
                 return ItemStack.EMPTY;
             }
         } else if (index < TE_INVENTORY_FIRST_SLOT_INDEX + TE_INVENTORY_SLOT_COUNT) {
@@ -94,10 +108,55 @@ public class NidavelliranForgeMenu extends AbstractContainerMenu {
         sourceSlot.onTake(playerIn, sourceStack);
         return copyOfSourceStack;
     }
+    
+    // Helper methods for item type checking (matching those in BlockEntity)
+    private boolean isPotterySherd(ItemStack stack) {
+        return stack.is(net.minecraft.world.item.Items.DANGER_POTTERY_SHERD) || 
+               stack.is(net.minecraft.world.item.Items.HEART_POTTERY_SHERD) ||
+               stack.is(net.minecraft.world.item.Items.PRIZE_POTTERY_SHERD) ||
+               stack.is(net.minecraft.world.item.Items.MOURNER_POTTERY_SHERD) ||
+               stack.is(net.minecraft.world.item.Items.EXPLORER_POTTERY_SHERD) ||
+               stack.is(net.minecraft.world.item.Items.PLENTY_POTTERY_SHERD);
+    }
+    
+    private boolean isOtherRecipeItem(ItemStack stack) {
+        return stack.is(net.minecraft.world.item.Items.NETHERITE_AXE) ||
+               stack.is(net.minecraft.world.item.Items.WITHER_SKELETON_SKULL) ||
+               stack.is(net.minecraft.world.item.Items.ENCHANTED_GOLDEN_APPLE) ||
+               stack.is(net.minecraft.world.item.Items.VERDANT_FROGLIGHT) ||
+               stack.is(net.minecraft.world.item.Items.WILD_ARMOR_TRIM_SMITHING_TEMPLATE) ||
+               stack.is(net.minecraft.world.item.Items.MUSIC_DISC_11);
+    }
+    
+    private boolean isStone(ItemStack stack) {
+        return stack.is(org.jcs.egm.registry.ModItems.POWER_STONE.get()) ||
+               stack.is(org.jcs.egm.registry.ModItems.SOUL_STONE.get()) ||
+               stack.is(org.jcs.egm.registry.ModItems.MIND_STONE.get()) ||
+               stack.is(org.jcs.egm.registry.ModItems.TIME_STONE.get()) ||
+               stack.is(org.jcs.egm.registry.ModItems.SPACE_STONE.get()) ||
+               stack.is(org.jcs.egm.registry.ModItems.REALITY_STONE.get());
+    }
 
     @Override
     public boolean stillValid(Player player) {
         return stillValid(access, player, ModBlocks.NIDAVELLIRIAN_FORGE.get());
+    }
+
+    @Override
+    public void removed(Player player) {
+        super.removed(player);
+        if (!player.level().isClientSide()) {
+            // Drop all items from the forge when menu is closed
+            for (int i = 0; i < 3; i++) { // Only drop input slots, not output
+                ItemStack stack = this.blockEntity.getItemHandler().getStackInSlot(i);
+                if (!stack.isEmpty()) {
+                    player.drop(stack, false);
+                    this.blockEntity.getItemHandler().setStackInSlot(i, ItemStack.EMPTY);
+                }
+            }
+            // Also clear the output slot
+            this.blockEntity.getItemHandler().setStackInSlot(3, ItemStack.EMPTY);
+        }
     }
 
     private void addPlayerInventory(Inventory playerInventory) {

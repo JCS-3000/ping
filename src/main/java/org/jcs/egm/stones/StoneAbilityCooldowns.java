@@ -39,6 +39,7 @@ public final class StoneAbilityCooldowns {
         // ===== POWER =====
         set("power","shockwave_slam").cooldown(180).chargeup(60);
         set("power","infinite_lightning").cooldown(480).chargeup(60).holdInterval(4);
+        set("power","empowered_punch").cooldown(360).chargeup(60);
 
         // ===== SOUL =====
         set("soul","passive_totem").cooldown(12000);

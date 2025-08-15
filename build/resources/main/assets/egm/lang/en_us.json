@@ -18,6 +18,9 @@
   "block.egm.trapped_starlight": "Trapped Starlight",
   "block.egm.nidavellirian_forge": "Nidavellirian Forge",
   "container.egm.nidavellirian_forge": "Nidavellirian Forge",
+  "jei.egm.nidavellirian_forge": "Nidavellirian Forge",
+  "jei.egm.anvil_crafting": "Anvil Crafting",
+  "effect.egm.empowered_punch": "Empowered Punch",
   "death.attack.infinity_stone": "%1$s decided to emulate Tony Stark",
 
   "itemGroup.egm.egm_tab": "End Game Mod"

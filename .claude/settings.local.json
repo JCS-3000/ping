@@ -5,7 +5,11 @@
       "Bash(./gradlew:*)",
       "Bash(cp:*)",
       "Bash(rm:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(mkdir:*)",
+      "Bash(dir)",
+      "Bash(dir:*)",
+      "Bash(.gradlew build)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
