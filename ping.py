@@ -236,7 +236,7 @@ def schnorr_verify(msg: bytes, pubkey: bytes, sig: bytes) -> bool:
 # ==============================================================================
 # Constants
 # ==============================================================================
-APP_VERSION = "1.1.46"
+APP_VERSION = "1.1.48"
 APP_ID = "ping-e2e-v1"
 DEBUG = False  # Set via --debug flag
 LEGACY_MODE = False  # Legacy mode for old client compatibility (--legacy)
@@ -540,6 +540,121 @@ def clear_screen_with_color():
     import os
     # Clear screen
     print("\033[2J\033[H", end='', flush=True)
+
+
+# ==============================================================================
+# Terminal UI - Fixed Input Line
+# ==============================================================================
+
+# Global state for terminal UI
+TERM_UI_ENABLED = True  # Can be disabled if it causes issues
+TERM_ROWS = 24  # Will be updated dynamically
+TERM_COLS = 80
+CURRENT_INPUT = ""  # Track what user is typing
+CURRENT_PROMPT = "> "
+
+def get_terminal_size() -> tuple[int, int]:
+    """Get terminal dimensions (rows, cols)"""
+    try:
+        import shutil
+        cols, rows = shutil.get_terminal_size()
+        return rows, cols
+    except:
+        return 24, 80
+
+def setup_scroll_region():
+    """Setup terminal scroll region excluding bottom line"""
+    global TERM_ROWS, TERM_COLS
+    if not TERM_UI_ENABLED:
+        return
+    
+    TERM_ROWS, TERM_COLS = get_terminal_size()
+    # Set scroll region to all lines except the last one
+    # \033[{top};{bottom}r sets scroll region
+    print(f"\033[1;{TERM_ROWS - 1}r", end='', flush=True)
+    # Move cursor to bottom of scroll region
+    print(f"\033[{TERM_ROWS - 1};1H", end='', flush=True)
+
+def reset_scroll_region():
+    """Reset scroll region to full terminal"""
+    if not TERM_UI_ENABLED:
+        return
+    print("\033[r", end='', flush=True)
+
+def move_to_input_line():
+    """Move cursor to the fixed input line at bottom"""
+    global TERM_ROWS
+    if not TERM_UI_ENABLED:
+        return
+    TERM_ROWS, _ = get_terminal_size()
+    # Save cursor, move to last line, clear it
+    print(f"\033[{TERM_ROWS};1H\033[2K", end='', flush=True)
+
+def print_above_input(text: str, prompt: str = ""):
+    """Print text in the scroll region, preserving input line"""
+    global CURRENT_PROMPT
+    if not TERM_UI_ENABLED:
+        print(f"\r{text}")
+        if prompt:
+            print(prompt, end='', flush=True)
+        return
+    
+    if prompt:
+        CURRENT_PROMPT = prompt
+    
+    rows, cols = get_terminal_size()
+    
+    # Save cursor position
+    print("\033[s", end='', flush=True)
+    
+    # Move to bottom of scroll region (line above input)
+    print(f"\033[{rows - 1};1H", end='', flush=True)
+    
+    # Scroll up and print new line
+    print(f"\033[S", end='', flush=True)  # Scroll up one line
+    print(f"\033[{rows - 1};1H", end='', flush=True)  # Move to that line
+    print(f"\033[2K{text}", end='', flush=True)  # Clear line and print
+    
+    # Move to input line and redraw prompt
+    print(f"\033[{rows};1H\033[2K{CURRENT_PROMPT}", end='', flush=True)
+    
+    # Note: We can't restore the typed input easily without more complex handling
+    # But at least the prompt is visible
+
+def redraw_input_line(prompt: str):
+    """Redraw just the input line"""
+    global CURRENT_PROMPT
+    CURRENT_PROMPT = prompt
+    if not TERM_UI_ENABLED:
+        print(prompt, end='', flush=True)
+        return
+    
+    rows, _ = get_terminal_size()
+    print(f"\033[{rows};1H\033[2K{prompt}", end='', flush=True)
+
+def print_stream(text: str):
+    """Print text to the message stream (handles multi-line). 
+    Use this for command output that should appear in the chat stream."""
+    if not TERM_UI_ENABLED:
+        print(text)
+        return
+    
+    # Split into lines and print each one
+    lines = text.split('\n')
+    for line in lines:
+        rows, cols = get_terminal_size()
+        
+        # Move to bottom of scroll region
+        print(f"\033[{rows - 1};1H", end='', flush=True)
+        
+        # Scroll up and print new line
+        print(f"\033[S", end='', flush=True)
+        print(f"\033[{rows - 1};1H", end='', flush=True)
+        print(f"\033[2K{line}", end='', flush=True)
+    
+    # Redraw prompt at bottom
+    rows, _ = get_terminal_size()
+    print(f"\033[{rows};1H\033[2K{CURRENT_PROMPT}", end='', flush=True)
 
 
 # ==============================================================================
@@ -2926,6 +3041,19 @@ class PingNostrCLI:
         # Setup readline for history and tab completion
         self._setup_readline()
     
+    def _get_prompt(self) -> str:
+        """Get the current prompt string"""
+        if self.current_room:
+            lock = "🔒" if self.current_password else ""
+            return f"[{self.current_room}]{lock} > "
+        return "> "
+    
+    def _print(self, text: str):
+        """Print text to the message stream (for command output)"""
+        global CURRENT_PROMPT
+        CURRENT_PROMPT = self._get_prompt()
+        print_stream(text)
+    
     def _setup_readline(self):
         """Setup readline for command history and tab completion"""
         try:
@@ -3142,7 +3270,7 @@ class PingNostrCLI:
 
     def _help(self):
         """Show full command help"""
-        print("""
+        self._print("""
   ════════════════════════════════════════════════════
                         COMMANDS
   ════════════════════════════════════════════════════
@@ -3166,6 +3294,7 @@ class PingNostrCLI:
   CONFIG
     /color [theme|bg fg]  Set colors (/color themes)
     /sound [on|off|test]  Toggle sound notifications
+    /fixedinput [on|off]  Toggle fixed input line
 
   SESSION
     /printsession         Show encryption keys
@@ -3187,6 +3316,9 @@ class PingNostrCLI:
         self._quick_help()
         self.running = True
         
+        # Setup terminal scroll region for fixed input line
+        setup_scroll_region()
+        
         if self.initial_room:
             await self._join(self.initial_room, self.initial_password)
         
@@ -3198,12 +3330,22 @@ class PingNostrCLI:
                     prompt = f"[{self.current_room}]{lock} > "
                 else:
                     prompt = "> "
+                
+                # Move to input line before getting input
+                move_to_input_line()
                 line = await asyncio.get_event_loop().run_in_executor(None, lambda: input(prompt))
                 if line:
                     await self._handle(line.strip())
             except (EOFError, KeyboardInterrupt):
                 print("\nGoodbye!")
                 break
+        
+        # Reset scroll region before exit
+        reset_scroll_region()
+        
+        # Clear screen and move cursor to top for clean exit
+        print("\033[2J\033[H", end='', flush=True)
+        print("Goodbye! 🏓\n")
         
         # Save command history
         self._save_history()
@@ -3220,13 +3362,13 @@ class PingNostrCLI:
                 if args:
                     await self._parse_join(args)
                 else:
-                    print("  Usage: /join <room> [password]")
+                    self._print("  Usage: /join <room> [password]")
             elif cmd in ('leave', 'l'):
                 await self._leave()
             elif cmd in ('peers', 'p'):
                 self._peers()
             elif cmd in ('dm', 'd'):
-                await self._dm(args) if args else print("  Usage: /dm <username> <message>")
+                await self._dm(args) if args else self._print("  Usage: /dm <username> <message>")
             elif cmd == 'reconnect':
                 await self._reconnect()
             elif cmd in ('name', 'n'):
@@ -3235,9 +3377,9 @@ class PingNostrCLI:
                     self.storage.save_username(args)
                     if self.client:
                         self.client.username = args
-                    print(f"  Name: {args}")
+                    self._print(f"  Name: {args}")
                 else:
-                    print("  Usage: /name <username>")
+                    self._print("  Usage: /name <username>")
             elif cmd == 'relays':
                 self._relays()
             elif cmd in ('info', 'i'):
@@ -3248,6 +3390,8 @@ class PingNostrCLI:
                 self._color(args)
             elif cmd == 'sound':
                 self._sound(args)
+            elif cmd == 'fixedinput':
+                self._toggle_fixed_input(args)
             elif cmd == 'save':
                 self._save()
             elif cmd == 'load':
@@ -3263,12 +3407,12 @@ class PingNostrCLI:
             elif cmd == 'help':
                 self._help()
             else:
-                print(f"  Unknown: /{cmd}")
+                self._print(f"  Unknown: /{cmd}")
         
         elif self.current_room:
             await self._send(line)
         else:
-            print("  Join a room first: /join <room> [password]")
+            self._print("  Join a room first: /join <room> [password]")
     
     async def _parse_join(self, args: str):
         """Parse join command arguments: /join <room> [password]"""
@@ -3283,10 +3427,10 @@ class PingNostrCLI:
         
         # Show room info
         if password:
-            print(f"\n  Joining room: {room} 🔒 (password-protected)")
+            self._print(f"\n  Joining room: {room} 🔒 (password-protected)")
         else:
-            print(f"\n  Joining room: {room}")
-        print(f"  Connecting to relays...")
+            self._print(f"\n  Joining room: {room}")
+        self._print(f"  Connecting to relays...")
         
         self.client = NostrClient(NOSTR_RELAYS, self.identity, self.username, 
                                    legacy_mode=self.legacy_mode, 
@@ -3305,17 +3449,17 @@ class PingNostrCLI:
             self.current_password = password
             
             lock = " 🔒" if password else ""
-            print(f"\n  ✓ Joined: {room}{lock} ({connected} relays)")
-            print(f"  Waiting for peers...\n")
+            self._print(f"\n  ✓ Joined: {room}{lock} ({connected} relays)")
+            self._print(f"  Waiting for peers...\n")
         else:
-            print(f"  ✗ Failed to connect to any relay")
+            self._print(f"  ✗ Failed to connect to any relay")
             self.client = None
     
     async def _leave(self):
         if not self.current_room:
             return
         
-        print(f"  Leaving: {self.current_room}")
+        self._print(f"  Leaving: {self.current_room}")
         if self.client:
             await self.client.leave_room()
             await self.client.disconnect()
@@ -3329,7 +3473,7 @@ class PingNostrCLI:
         
         peers_with_keys = sum(1 for p in self.client.peers.values() if p.encryption_pubkey)
         if peers_with_keys == 0:
-            print("  No peers with keys yet")
+            self._print("  No peers with keys yet")
             return
         
         # Save own message
@@ -3346,20 +3490,28 @@ class PingNostrCLI:
         # Send
         await self.client.send_message(text)
         
-        # Display with own fingerprint
+        # Display with own fingerprint using print_above_input
         t = time.strftime("%H:%M", time.localtime(msg.timestamp / 1000))
         fingerprint = self.identity.id[:8]
-        print(f"  [{t}] {self.username} [{fingerprint}]: {text}")
+        
+        # Build prompt
+        if self.current_room:
+            lock = "🔒" if self.current_password else ""
+            prompt = f"[{self.current_room}]{lock} > "
+        else:
+            prompt = "> "
+        
+        print_above_input(f"  [{t}] {self.username} [{fingerprint}]: {text}", prompt)
     
     async def _dm(self, args: str):
         """Send a direct message"""
         if not self.client:
-            print("  Not connected")
+            self._print("  Not connected")
             return
         
         parts = args.split(maxsplit=1)
         if len(parts) < 2:
-            print("  Usage: /dm <username> <message>")
+            self._print("  Usage: /dm <username> <message>")
             return
         
         target_username, message = parts
@@ -3373,22 +3525,30 @@ class PingNostrCLI:
         
         if await self.client.send_dm(target_username, message):
             t = time.strftime("%H:%M")
-            print(f"  [{t}] 📤 DM to {target_username} [{target_fingerprint}]: {message}")
+            
+            # Build prompt
+            if self.current_room:
+                lock = "🔒" if self.current_password else ""
+                prompt = f"[{self.current_room}]{lock} > "
+            else:
+                prompt = "> "
+            
+            print_above_input(f"  [{t}] 📤 DM to {target_username} [{target_fingerprint}]: {message}", prompt)
         else:
-            print(f"  ✗ Peer '{target_username}' not found or no key")
+            self._print(f"  ✗ Peer '{target_username}' not found or no key")
     
     async def _reconnect(self):
         """Reconnect to relays"""
         if not self.client:
-            print("  Not in a room")
+            self._print("  Not in a room")
             return
         
-        print("  Reconnecting to relays...")
+        self._print("  Reconnecting to relays...")
         connected = await self.client.reconnect()
         if connected > 0:
-            print(f"  ✓ Reconnected ({connected} relays)")
+            self._print(f"  ✓ Reconnected ({connected} relays)")
         else:
-            print("  ✗ Failed to reconnect")
+            self._print("  ✗ Failed to reconnect")
     
     def _on_message(self, sender_pk: str, sender: str, text: str, ts: float, msg_id: str):
         msg = Message(
@@ -3408,23 +3568,31 @@ class PingNostrCLI:
             fingerprint = peer.identity[:8] if peer.identity else sender_pk[:8]
         
         t = time.strftime("%H:%M", time.localtime(ts / 1000))
-        print(f"\r  [{t}] {sender} [{fingerprint}]: {text}")
+        
+        # Build prompt
+        if self.current_room:
+            lock = "🔒" if self.current_password else ""
+            prompt = f"[{self.current_room}]{lock} > "
+        else:
+            prompt = "> "
+        
+        # Print message above input line
+        print_above_input(f"  [{t}] {sender} [{fingerprint}]: {text}", prompt)
         
         # Sound notification - check for mention first
         if self.username.lower() in text.lower():
             beep_mention()
         else:
             beep_message()
-        
-        prompt = f"[{self.current_room}] > " if self.current_room else "> "
-        print(prompt, end='', flush=True)
     
     def _on_peer_join(self, nostr_pk: str):
-        print(f"\r  + Peer: {nostr_pk[:16]}...")
+        prompt = f"[{self.current_room}] > " if self.current_room else "> "
+        print_above_input(f"  + Peer: {nostr_pk[:16]}...", prompt)
     
     def _on_key_exchange(self, nostr_pk: str, username: str, ping_id: str):
         fingerprint = ping_id[:8] if ping_id else nostr_pk[:8]
-        print(f"\r  🔑 {username} [{fingerprint}]")
+        prompt = f"[{self.current_room}] > " if self.current_room else "> "
+        print_above_input(f"  🔑 {username} [{fingerprint}]", prompt)
     
     def _on_leave(self, nostr_pk: str, username: str):
         # Get fingerprint
@@ -3432,9 +3600,13 @@ class PingNostrCLI:
         if self.client and nostr_pk in self.client.peers:
             peer = self.client.peers[nostr_pk]
             fingerprint = peer.identity[:8] if peer.identity else nostr_pk[:8]
-        print(f"\r  ← {username} [{fingerprint}] left")
-        prompt = f"[{self.current_room}] > " if self.current_room else "> "
-        print(prompt, end='', flush=True)
+        
+        if self.current_room:
+            lock = "🔒" if self.current_password else ""
+            prompt = f"[{self.current_room}]{lock} > "
+        else:
+            prompt = "> "
+        print_above_input(f"  ← {username} [{fingerprint}] left", prompt)
     
     def _on_dm(self, sender_pk: str, sender: str, text: str, ts: float, msg_id: str):
         # Get fingerprint from peer
@@ -3444,86 +3616,99 @@ class PingNostrCLI:
             fingerprint = peer.identity[:8] if peer.identity else sender_pk[:8]
         
         t = time.strftime("%H:%M", time.localtime(ts / 1000))
-        print(f"\r  [{t}] 📩 DM from {sender} [{fingerprint}]: {text}")
+        
+        # Build prompt
+        if self.current_room:
+            lock = "🔒" if self.current_password else ""
+            prompt = f"[{self.current_room}]{lock} > "
+        else:
+            prompt = "> "
+        
+        print_above_input(f"  [{t}] 📩 DM from {sender} [{fingerprint}]: {text}", prompt)
         
         # Sound notification for DM (double beep)
         beep_dm()
-        
-        prompt = f"[{self.current_room}] > " if self.current_room else "> "
-        print(prompt, end='', flush=True)
     
     def _printsession(self):
         """Print current encryption keys"""
         import base64
         
-        print(f"\n  ═══ ENCRYPTION KEYS ═══")
-        print(f"  Ping ID:       {self.identity.id}")
-        print(f"  Nostr Pubkey:  {self.identity.hex_pubkey[:32]}...")
-        print(f"  Nostr npub:    {self.identity.npub[:32]}...")
-        print(f"  X25519 Pubkey: {base64.b64encode(self.identity.encryption_keys.pub_bytes()).decode()[:32]}...")
-        print(f"  Created:       {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.identity.created_at / 1000))}")
+        lines = [
+            f"\n  ═══ ENCRYPTION KEYS ═══",
+            f"  Ping ID:       {self.identity.id}",
+            f"  Nostr Pubkey:  {self.identity.hex_pubkey[:32]}...",
+            f"  Nostr npub:    {self.identity.npub[:32]}...",
+            f"  X25519 Pubkey: {base64.b64encode(self.identity.encryption_keys.pub_bytes()).decode()[:32]}...",
+            f"  Created:       {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.identity.created_at / 1000))}"
+        ]
         
         # Show peer keys
         if self.client and self.client.peers:
-            print(f"\n  Peer Keys:")
+            lines.append(f"\n  Peer Keys:")
             for pk, peer in self.client.peers.items():
                 if peer.encryption_pubkey:
                     peer_key = base64.b64encode(peer.encryption_pubkey.public_bytes_raw()).decode()[:16]
-                    print(f"    🔑 {peer.username} [{peer.identity[:8] if peer.identity else pk[:8]}]: {peer_key}...")
+                    lines.append(f"    🔑 {peer.username} [{peer.identity[:8] if peer.identity else pk[:8]}]: {peer_key}...")
                 else:
-                    print(f"    ⏳ {peer.username}: no key yet")
-        print()
+                    lines.append(f"    ⏳ {peer.username}: no key yet")
+        lines.append("")
+        self._print('\n'.join(lines))
     
     def _invite(self):
         """Generate an invite code for the current room"""
         if not self.current_room:
-            print("  Not in a room. Join a room first.")
+            self._print("  Not in a room. Join a room first.")
             return
         
         # Generate invite code
         invite_code = encode_invite(self.current_room, self.current_password)
         
-        print(f"\n  ═══ ROOM INVITE ═══")
-        print(f"  Room: {self.current_room}" + (" 🔒" if self.current_password else ""))
-        print(f"\n  Invite Code:")
-        print(f"    {invite_code}")
-        print(f"\n  CLI Usage:")
-        print(f"    python ping_nostr.py --invite {invite_code}")
-        print(f"    python ping_nostr.py -i {invite_code}")
+        lines = [
+            f"\n  ═══ ROOM INVITE ═══",
+            f"  Room: {self.current_room}" + (" 🔒" if self.current_password else ""),
+            f"\n  Invite Code:",
+            f"    {invite_code}",
+            f"\n  CLI Usage:",
+            f"    python ping.py --invite {invite_code}",
+            f"    python ping.py -i {invite_code}"
+        ]
         
         # Generate QR code if available
         qr = generate_qr_code(invite_code, small=True)
         if qr:
-            print(f"\n  QR Code:")
-            print(qr)
+            lines.append(f"\n  QR Code:")
+            lines.append(qr)
         else:
-            print(f"\n  (Install 'qrcode' for QR code: pip install qrcode)")
+            lines.append(f"\n  (Install 'qrcode' for QR code: pip install qrcode)")
         
-        print()
+        lines.append("")
+        self._print('\n'.join(lines))
     
     def _peers(self):
         if not self.client or not self.client.peers:
-            print("  No peers")
+            self._print("  No peers")
             return
         
-        print(f"\n  Peers ({len(self.client.peers)}):")
+        lines = [f"\n  Peers ({len(self.client.peers)}):"]
         for pk, peer in self.client.peers.items():
             key = "🔑" if peer.encryption_pubkey else "⏳"
             name = peer.username or "unknown"
             fingerprint = peer.identity[:8] if peer.identity else pk[:8]
-            print(f"    {key} {name} [{fingerprint}]")
-        print()
+            lines.append(f"    {key} {name} [{fingerprint}]")
+        lines.append("")
+        self._print('\n'.join(lines))
     
     def _relays(self):
         if not self.client:
-            print("  Not connected")
+            self._print("  Not connected")
             return
         
-        print(f"\n  Relays:")
+        lines = ["\n  Relays:"]
         for relay in self.client.relays:
             status = "✓" if relay.connected else "✗"
-            print(f"    {status} {relay.url}")
-        print()
+            lines.append(f"    {status} {relay.url}")
+        lines.append("")
+        self._print('\n'.join(lines))
     
     def _info(self):
         peers = len(self.client.peers) if self.client else 0
@@ -3536,12 +3721,15 @@ class PingNostrCLI:
         else:
             room_display = "None"
         
-        print(f"\n  Ping ID:   {self.identity.id}")
-        print(f"  Username:  {self.username}")
-        print(f"  Nostr:     {self.identity.npub}")
-        print(f"  Room:      {room_display}")
-        print(f"  Peers:     {peers} ({keys} with keys)")
-        print(f"  Relays:    {relays} connected\n")
+        lines = [
+            f"\n  Ping ID:   {self.identity.id}",
+            f"  Username:  {self.username}",
+            f"  Nostr:     {self.identity.npub}",
+            f"  Room:      {room_display}",
+            f"  Peers:     {peers} ({keys} with keys)",
+            f"  Relays:    {relays} connected\n"
+        ]
+        self._print('\n'.join(lines))
     
     def _clear(self):
         """Clear the terminal screen"""
@@ -3549,7 +3737,9 @@ class PingNostrCLI:
         os.system('cls' if os.name == 'nt' else 'clear')
         self._banner()
         if self.current_room:
-            print(f"  Room: {self.current_room}\n")
+            self._print(f"  Room: {self.current_room}\n")
+        # Re-setup scroll region after clear
+        setup_scroll_region()
     
     def _color(self, args: str):
         """Set terminal foreground and background colors, or apply a theme"""
@@ -3561,7 +3751,7 @@ class PingNostrCLI:
         
         if parts[0] == 'reset':
             print(reset_terminal_color(), end='', flush=True)
-            print("  ✓ Colors reset to default")
+            self._print("  ✓ Colors reset to default")
             return
         
         if parts[0] == 'list':
@@ -3578,9 +3768,9 @@ class PingNostrCLI:
             if apply_theme(theme):
                 bg, fg = THEMES[theme]
                 if bg and fg:
-                    print(f"  ✓ Theme '{theme}' applied (bg={bg}, fg={fg})")
+                    self._print(f"  ✓ Theme '{theme}' applied (bg={bg}, fg={fg})")
                 else:
-                    print(f"  ✓ Theme '{theme}' applied (reset to default)")
+                    self._print(f"  ✓ Theme '{theme}' applied (reset to default)")
                 return
         
         # Parse bg and fg
@@ -3592,8 +3782,8 @@ class PingNostrCLI:
             if parts[0] in COLORS:
                 fg = parts[0]
             else:
-                print(f"  Unknown color or theme: {parts[0]}")
-                print(f"  Use /color list or /color themes")
+                self._print(f"  Unknown color or theme: {parts[0]}")
+                self._print(f"  Use /color list or /color themes")
                 return
         elif len(parts) >= 2:
             bg = parts[0] if parts[0] != '-' else None
@@ -3601,13 +3791,13 @@ class PingNostrCLI:
         
         # Validate colors
         if bg and bg not in COLORS:
-            print(f"  Unknown background color: {bg}")
-            print(f"  Use /color list to see available colors")
+            self._print(f"  Unknown background color: {bg}")
+            self._print(f"  Use /color list to see available colors")
             return
         
         if fg and fg not in COLORS:
-            print(f"  Unknown foreground color: {fg}")
-            print(f"  Use /color list to see available colors")
+            self._print(f"  Unknown foreground color: {fg}")
+            self._print(f"  Use /color list to see available colors")
             return
         
         # Apply colors
@@ -3616,11 +3806,11 @@ class PingNostrCLI:
         # Show confirmation
         bg_name = bg or "default"
         fg_name = fg or "default"
-        print(f"  ✓ Color set: bg={bg_name}, fg={fg_name}")
+        self._print(f"  ✓ Color set: bg={bg_name}, fg={fg_name}")
     
     def _color_help(self):
         """Show color command help"""
-        print("""
+        self._print("""
   Usage: /color <theme>
          /color <bg> <fg>
          /color <fg>
@@ -3648,7 +3838,7 @@ class PingNostrCLI:
     
     def _color_themes(self):
         """Show available themes with preview"""
-        print("\n  Available Themes:\n")
+        lines = ["\n  Available Themes:\n"]
         
         # Group themes (skip aliases)
         main_themes = [
@@ -3670,53 +3860,56 @@ class PingNostrCLI:
             bg_code = COLORS[bg][1]
             fg_code = COLORS[fg][0]
             # Show preview
-            print(f"    \033[{bg_code};{fg_code}m {theme:12} \033[0m  {desc}")
+            lines.append(f"    \033[{bg_code};{fg_code}m {theme:12} \033[0m  {desc}")
         
-        print(f"\n  Aliases:")
-        print(f"    hacker, neo → matrix")
-        print(f"    cyber → tron")
-        print(f"    ibm → classic")
-        print(f"    crt, retro → amber")
-        print(f"    sepia, earth → coffee")
-        print(f"    day → light")
-        print(f"    fire → sunset")
-        print(f"    purple → grape")
-        print()
+        lines.append(f"\n  Aliases:")
+        lines.append(f"    hacker, neo → matrix")
+        lines.append(f"    cyber → tron")
+        lines.append(f"    ibm → classic")
+        lines.append(f"    crt, retro → amber")
+        lines.append(f"    sepia, earth → coffee")
+        lines.append(f"    day → light")
+        lines.append(f"    fire → sunset")
+        lines.append(f"    purple → grape")
+        lines.append("")
+        self._print('\n'.join(lines))
     
     def _color_list(self):
         """Show available colors with preview"""
-        print("\n  Available Colors:\n")
+        lines = ["\n  Available Colors:\n"]
         
         # Normal colors
-        print("  Normal:")
+        line = "  Normal:"
         for name in ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']:
             fg_code = COLORS[name][0]
-            print(f"    \033[{fg_code}m{name:12}\033[0m", end='')
-        print()
+            line += f"    \033[{fg_code}m{name:12}\033[0m"
+        lines.append(line)
         
         # Light colors
-        print("\n  Light/Bright:")
+        line = "\n  Light/Bright:"
         for name in ['lblack', 'lred', 'lgreen', 'lyellow', 'lblue', 'lmagenta', 'lcyan', 'lwhite']:
             fg_code = COLORS[name][0]
-            print(f"    \033[{fg_code}m{name:12}\033[0m", end='')
-        print()
+            line += f"    \033[{fg_code}m{name:12}\033[0m"
+        lines.append(line)
         
         # Brown/extras
-        print("\n  Brown/Extra:")
+        line = "\n  Brown/Extra:"
         for name in ['brown', 'lbrown', 'tan', 'orange']:
             fg_code = COLORS[name][0]
-            print(f"    \033[{fg_code}m{name:12}\033[0m", end='')
-        print()
+            line += f"    \033[{fg_code}m{name:12}\033[0m"
+        lines.append(line)
         
         # Aliases
-        print("\n  Aliases: gray/grey (=lblack), default/none, reset")
+        lines.append("\n  Aliases: gray/grey (=lblack), default/none, reset")
         
         # Background preview
-        print("\n  Background Preview:")
+        line = "\n  Background Preview:"
         for name in ['black', 'red', 'green', 'blue', 'magenta', 'cyan']:
             bg_code = COLORS[name][1]
-            print(f"    \033[{bg_code};97m {name:^10} \033[0m", end='')
-        print("\n")
+            line += f"    \033[{bg_code};97m {name:^10} \033[0m"
+        lines.append(line)
+        lines.append("")
+        self._print('\n'.join(lines))
     
     def _sound(self, args: str):
         """Toggle or set sound notifications"""
@@ -3728,31 +3921,56 @@ class PingNostrCLI:
             # Toggle
             SOUND_ENABLED = not SOUND_ENABLED
             status = "ON" if SOUND_ENABLED else "OFF"
-            print(f"  🔔 Sound: {status}")
+            self._print(f"  🔔 Sound: {status}")
             if SOUND_ENABLED:
                 beep_message()  # Play test beep
         elif args in ('on', '1', 'yes', 'true'):
             SOUND_ENABLED = True
-            print(f"  🔔 Sound: ON")
+            self._print(f"  🔔 Sound: ON")
             beep_message()  # Play test beep
         elif args in ('off', '0', 'no', 'false'):
             SOUND_ENABLED = False
-            print(f"  🔕 Sound: OFF")
+            self._print(f"  🔕 Sound: OFF")
         elif args == 'test':
-            print(f"  Testing sounds...")
-            print(f"    Message beep:", end=' ', flush=True)
+            self._print(f"  Testing sounds...")
+            self._print(f"    Message beep...")
             beep_message()
             time.sleep(0.5)
-            print(f"done")
-            print(f"    DM beep:", end=' ', flush=True)
+            self._print(f"    DM beep...")
             beep_dm()
             time.sleep(0.5)
-            print(f"done")
-            print(f"    Mention beep:", end=' ', flush=True)
+            self._print(f"    Mention beep...")
             beep_mention()
-            print(f"done")
+            self._print(f"  Done!")
         else:
-            print(f"  Usage: /sound [on|off|test]")
+            self._print(f"  Usage: /sound [on|off|test]")
+    
+    def _toggle_fixed_input(self, args: str):
+        """Toggle fixed input line at bottom of screen"""
+        global TERM_UI_ENABLED
+        
+        args = args.strip().lower()
+        
+        if not args:
+            # Toggle
+            TERM_UI_ENABLED = not TERM_UI_ENABLED
+            if TERM_UI_ENABLED:
+                setup_scroll_region()
+                self._print(f"  ✓ Fixed input: ON (input stays at bottom)")
+            else:
+                reset_scroll_region()
+                self._print(f"  ✗ Fixed input: OFF (classic mode)")
+        elif args in ('on', '1', 'yes', 'true'):
+            TERM_UI_ENABLED = True
+            setup_scroll_region()
+            self._print(f"  ✓ Fixed input: ON")
+        elif args in ('off', '0', 'no', 'false'):
+            TERM_UI_ENABLED = False
+            reset_scroll_region()
+            self._print(f"  ✗ Fixed input: OFF")
+        else:
+            self._print(f"  Usage: /fixedinput [on|off]")
+            self._print(f"  Keeps your input line at the bottom of the screen")
     
     def _save(self):
         """Save session, username, and settings to pingconfig.json"""
@@ -3764,26 +3982,28 @@ class PingNostrCLI:
         )
         
         if success:
-            print(f"\n  ✓ Saved to: {config_path}")
-            print(f"    • Username:    {self.username}")
-            print(f"    • Ping ID:     {self.identity.id}")
-            print(f"    • Nostr npub:  {self.identity.npub[:32]}...")
+            lines = [
+                f"\n  ✓ Saved to: {config_path}",
+                f"    • Username:    {self.username}",
+                f"    • Ping ID:     {self.identity.id}",
+                f"    • Nostr npub:  {self.identity.npub[:32]}..."
+            ]
             if self.current_room:
-                print(f"    • Room:        {self.current_room}")
+                lines.append(f"    • Room:        {self.current_room}")
             if CURRENT_THEME:
-                print(f"    • Theme:       {CURRENT_THEME}")
+                lines.append(f"    • Theme:       {CURRENT_THEME}")
             elif CURRENT_BG or CURRENT_FG:
-                print(f"    • Colors:      bg={CURRENT_BG or 'default'}, fg={CURRENT_FG or 'default'}")
-            print(f"    • Sound:       {'on' if SOUND_ENABLED else 'off'}")
+                lines.append(f"    • Colors:      bg={CURRENT_BG or 'default'}, fg={CURRENT_FG or 'default'}")
+            lines.append(f"    • Sound:       {'on' if SOUND_ENABLED else 'off'}")
             if LEGACY_MODE:
-                print(f"    • Mode:        legacy")
+                lines.append(f"    • Mode:        legacy")
             elif HARDENED_MODE:
-                print(f"    • Mode:        hardened")
-            print(f"\n  Use --load to restore this session")
+                lines.append(f"    • Mode:        hardened")
+            lines.append(f"\n  Use --load to restore this session")
+            lines.append("")
+            self._print('\n'.join(lines))
         else:
-            print(f"\n  ✗ Save failed")
-            print(f"    • Path: {config_path}")
-        print()
+            self._print(f"\n  ✗ Save failed\n    • Path: {config_path}\n")
     
     def _load(self):
         """Load session, username, and settings from pingconfig.json"""
@@ -3801,24 +4021,26 @@ class PingNostrCLI:
                 self.client.identity = identity
                 self.client.username = self.username
             
-            print(f"\n  ✓ Loaded from: {Storage.get_config_path()}")
-            print(f"    • Username:    {self.username}")
-            print(f"    • Ping ID:     {self.identity.id}")
-            print(f"    • Nostr npub:  {self.identity.npub[:32]}...")
+            lines = [
+                f"\n  ✓ Loaded from: {Storage.get_config_path()}",
+                f"    • Username:    {self.username}",
+                f"    • Ping ID:     {self.identity.id}",
+                f"    • Nostr npub:  {self.identity.npub[:32]}..."
+            ]
             
             # Apply settings if present
             if settings:
                 # Sound
                 SOUND_ENABLED = settings.get("sound_enabled", True)
-                print(f"    • Sound:       {'on' if SOUND_ENABLED else 'off'}")
+                lines.append(f"    • Sound:       {'on' if SOUND_ENABLED else 'off'}")
                 
                 # Privacy mode
                 LEGACY_MODE = settings.get("legacy_mode", False)
                 HARDENED_MODE = settings.get("hardened_mode", False)
                 if LEGACY_MODE:
-                    print(f"    • Mode:        legacy")
+                    lines.append(f"    • Mode:        legacy")
                 elif HARDENED_MODE:
-                    print(f"    • Mode:        hardened")
+                    lines.append(f"    • Mode:        hardened")
                 
                 # Theme/colors
                 theme = settings.get("theme")
@@ -3827,23 +4049,24 @@ class PingNostrCLI:
                 
                 if theme:
                     apply_theme(theme)
-                    print(f"    • Theme:       {theme}")
+                    lines.append(f"    • Theme:       {theme}")
                 elif bg_color or fg_color:
                     apply_terminal_color(bg_color, fg_color)
-                    print(f"    • Colors:      bg={bg_color or 'default'}, fg={fg_color or 'default'}")
+                    lines.append(f"    • Colors:      bg={bg_color or 'default'}, fg={fg_color or 'default'}")
                 
                 # Room info
                 room = settings.get("room")
                 room_password = settings.get("room_password")
                 if room:
-                    print(f"    • Room:        {room}")
+                    lines.append(f"    • Room:        {room}")
                     self.initial_room = room
                     self.initial_password = room_password
             
-            print(f"\n  ⚠️  Rejoin room to use new identity")
+            lines.append(f"\n  ⚠️  Rejoin room to use new identity")
+            lines.append("")
+            self._print('\n'.join(lines))
         else:
-            print(f"\n  ✗ Load failed: {error}")
-        print()
+            self._print(f"\n  ✗ Load failed: {error}\n")
     
     async def _update(self, args: str):
         """Check for updates and optionally install them"""
