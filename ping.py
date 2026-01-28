@@ -236,7 +236,7 @@ def schnorr_verify(msg: bytes, pubkey: bytes, sig: bytes) -> bool:
 # ==============================================================================
 # Constants
 # ==============================================================================
-APP_VERSION = "1.1.48"
+APP_VERSION = "1.1.49"
 APP_ID = "ping-e2e-v1"
 DEBUG = False  # Set via --debug flag
 LEGACY_MODE = False  # Legacy mode for old client compatibility (--legacy)
@@ -591,7 +591,7 @@ def move_to_input_line():
     print(f"\033[{TERM_ROWS};1H\033[2K", end='', flush=True)
 
 def print_above_input(text: str, prompt: str = ""):
-    """Print text in the scroll region, preserving input line"""
+    """Print text in the scroll region, preserving input line and typed text"""
     global CURRENT_PROMPT
     if not TERM_UI_ENABLED:
         print(f"\r{text}")
@@ -602,10 +602,17 @@ def print_above_input(text: str, prompt: str = ""):
     if prompt:
         CURRENT_PROMPT = prompt
     
-    rows, cols = get_terminal_size()
+    # Try to get current input buffer from readline
+    current_input = ""
+    cursor_pos = 0
+    try:
+        import readline
+        current_input = readline.get_line_buffer()
+        cursor_pos = readline.get_begidx()  # Not perfect but helps
+    except:
+        pass
     
-    # Save cursor position
-    print("\033[s", end='', flush=True)
+    rows, cols = get_terminal_size()
     
     # Move to bottom of scroll region (line above input)
     print(f"\033[{rows - 1};1H", end='', flush=True)
@@ -615,11 +622,8 @@ def print_above_input(text: str, prompt: str = ""):
     print(f"\033[{rows - 1};1H", end='', flush=True)  # Move to that line
     print(f"\033[2K{text}", end='', flush=True)  # Clear line and print
     
-    # Move to input line and redraw prompt
-    print(f"\033[{rows};1H\033[2K{CURRENT_PROMPT}", end='', flush=True)
-    
-    # Note: We can't restore the typed input easily without more complex handling
-    # But at least the prompt is visible
+    # Move to input line and redraw prompt + current input
+    print(f"\033[{rows};1H\033[2K{CURRENT_PROMPT}{current_input}", end='', flush=True)
 
 def redraw_input_line(prompt: str):
     """Redraw just the input line"""
@@ -629,8 +633,16 @@ def redraw_input_line(prompt: str):
         print(prompt, end='', flush=True)
         return
     
+    # Try to get current input buffer
+    current_input = ""
+    try:
+        import readline
+        current_input = readline.get_line_buffer()
+    except:
+        pass
+    
     rows, _ = get_terminal_size()
-    print(f"\033[{rows};1H\033[2K{prompt}", end='', flush=True)
+    print(f"\033[{rows};1H\033[2K{prompt}{current_input}", end='', flush=True)
 
 def print_stream(text: str):
     """Print text to the message stream (handles multi-line). 
@@ -638,6 +650,14 @@ def print_stream(text: str):
     if not TERM_UI_ENABLED:
         print(text)
         return
+    
+    # Try to get current input buffer from readline
+    current_input = ""
+    try:
+        import readline
+        current_input = readline.get_line_buffer()
+    except:
+        pass
     
     # Split into lines and print each one
     lines = text.split('\n')
@@ -652,9 +672,9 @@ def print_stream(text: str):
         print(f"\033[{rows - 1};1H", end='', flush=True)
         print(f"\033[2K{line}", end='', flush=True)
     
-    # Redraw prompt at bottom
+    # Redraw prompt + current input at bottom
     rows, _ = get_terminal_size()
-    print(f"\033[{rows};1H\033[2K{CURRENT_PROMPT}", end='', flush=True)
+    print(f"\033[{rows};1H\033[2K{CURRENT_PROMPT}{current_input}", end='', flush=True)
 
 
 # ==============================================================================
