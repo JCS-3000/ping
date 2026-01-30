@@ -236,7 +236,7 @@ def schnorr_verify(msg: bytes, pubkey: bytes, sig: bytes) -> bool:
 # ==============================================================================
 # Constants
 # ==============================================================================
-APP_VERSION = "1.1.49"
+APP_VERSION = "1.2.0"
 APP_ID = "ping-e2e-v1"
 DEBUG = False  # Set via --debug flag
 LEGACY_MODE = False  # Legacy mode for old client compatibility (--legacy)
@@ -543,15 +543,12 @@ def clear_screen_with_color():
 
 
 # ==============================================================================
-# Terminal UI - Fixed Input Line
+# Terminal UI - Curses-based Interface
 # ==============================================================================
 
-# Global state for terminal UI
-TERM_UI_ENABLED = True  # Can be disabled if it causes issues
-TERM_ROWS = 24  # Will be updated dynamically
-TERM_COLS = 80
-CURRENT_INPUT = ""  # Track what user is typing
-CURRENT_PROMPT = "> "
+# Global UI instance (set when curses mode is active)
+CURSES_UI = None
+CURSES_MODE = True  # Use curses by default, fallback to classic if unavailable
 
 def get_terminal_size() -> tuple[int, int]:
     """Get terminal dimensions (rows, cols)"""
@@ -562,119 +559,1186 @@ def get_terminal_size() -> tuple[int, int]:
     except:
         return 24, 80
 
-def setup_scroll_region():
-    """Setup terminal scroll region excluding bottom line"""
-    global TERM_ROWS, TERM_COLS
-    if not TERM_UI_ENABLED:
-        return
+
+class CursesUI:
+    """Curses-based terminal UI with fixed input line and right panel"""
     
-    TERM_ROWS, TERM_COLS = get_terminal_size()
-    # Set scroll region to all lines except the last one
-    # \033[{top};{bottom}r sets scroll region
-    print(f"\033[1;{TERM_ROWS - 1}r", end='', flush=True)
-    # Move cursor to bottom of scroll region
-    print(f"\033[{TERM_ROWS - 1};1H", end='', flush=True)
+    def __init__(self):
+        self.stdscr = None
+        self.msg_win = None  # Message window (scrollable)
+        self.input_win = None  # Input line (fixed at bottom)
+        self.status_win = None  # Status bar
+        self.panel_win = None  # Right panel for peers/status
+        self.messages: list[str] = []  # Message history for redraw
+        self.max_messages = 1000  # Keep last N messages
+        self.input_buffer = ""
+        self.cursor_pos = 0
+        self.prompt = "> "
+        self.running = False
+        self.input_queue = None  # asyncio queue for input
+        self.message_queue = None  # asyncio queue for messages to display
+        self.scroll_offset = 0  # 0 = at bottom (latest), >0 = scrolled up
+        
+        # Input history
+        self.input_history: list[str] = []
+        self.history_index = -1  # -1 means not browsing history
+        self.history_temp = ""  # Temporary storage for current input when browsing
+        self.max_history = 500
+        
+        # Tab completion
+        self.completer = None  # Set by PingNostrCLI
+        self.completion_matches: list[str] = []
+        self.completion_index = 0
+        
+        # Color settings
+        self.color_pair_msg = 0  # Default
+        self.color_pair_status = 0
+        self.color_pair_input = 0
+        self.color_pair_panel = 0
+        self.current_theme = None
+        
+        # Right panel data
+        self.panel_width = 28  # Width of right panel
+        self.panel_hidden = False  # Toggle with Ctrl+F
+        self.connection_info = {
+            "room": "",
+            "relays_connected": 0,
+            "relays_total": 0,
+            "username": "",
+            "ping_id": "",
+        }
+        self.peers: list[dict] = []  # List of {username, fingerprint, has_key}
+        
+        # Callback for shortcuts (set by PingNostrCLI)
+        self.on_cycle_theme = None  # Ctrl+T
+        
+    def start(self):
+        """Initialize curses"""
+        import curses
+        self.stdscr = curses.initscr()
+        curses.noecho()
+        curses.cbreak()
+        self.stdscr.keypad(True)
+        
+        # Don't capture mouse - allows terminal's native text selection for copy/paste
+        # Use Page Up/Down for scrolling instead
+        try:
+            curses.mousemask(0)  # Disable all mouse capture
+        except:
+            pass
+        
+        # Try to enable colors
+        try:
+            curses.start_color()
+            curses.use_default_colors()
+            self._init_colors()
+        except:
+            pass
+        
+        # Create windows
+        self._create_windows()
+        self.running = True
+    
+    def _init_colors(self):
+        """Initialize curses color pairs"""
+        import curses
+        
+        # Check if terminal supports extended colors (256)
+        self.has_256_colors = curses.COLORS >= 256 if hasattr(curses, 'COLORS') else False
+        
+        # Map color names to curses colors
+        # Basic 8 colors (0-7)
+        self.color_map = {
+            'black': curses.COLOR_BLACK,      # 0
+            'red': curses.COLOR_RED,          # 1
+            'green': curses.COLOR_GREEN,      # 2
+            'yellow': curses.COLOR_YELLOW,    # 3
+            'blue': curses.COLOR_BLUE,        # 4
+            'magenta': curses.COLOR_MAGENTA,  # 5
+            'cyan': curses.COLOR_CYAN,        # 6
+            'white': curses.COLOR_WHITE,      # 7
+            'gray': 8 if self.has_256_colors else curses.COLOR_WHITE,
+            'grey': 8 if self.has_256_colors else curses.COLOR_WHITE,
+        }
+        
+        # Light/bright colors (8-15 in 256-color mode)
+        if self.has_256_colors:
+            self.color_map.update({
+                'lblack': 8,    # Bright black (gray)
+                'lred': 9,      # Bright red
+                'lgreen': 10,   # Bright green
+                'lyellow': 11,  # Bright yellow
+                'lblue': 12,    # Bright blue
+                'lmagenta': 13, # Bright magenta
+                'lcyan': 14,    # Bright cyan
+                'lwhite': 15,   # Bright white
+            })
+        else:
+            # Fallback to base colors - will use A_BOLD attribute for brightness
+            self.color_map.update({
+                'lblack': curses.COLOR_BLACK,
+                'lred': curses.COLOR_RED,
+                'lgreen': curses.COLOR_GREEN,
+                'lyellow': curses.COLOR_YELLOW,
+                'lblue': curses.COLOR_BLUE,
+                'lmagenta': curses.COLOR_MAGENTA,
+                'lcyan': curses.COLOR_CYAN,
+                'lwhite': curses.COLOR_WHITE,
+            })
+        
+        # Track if a color is "light" (needs bold in 8-color mode)
+        self.light_colors = {'lblack', 'lred', 'lgreen', 'lyellow', 'lblue', 'lmagenta', 'lcyan', 'lwhite'}
+        self.use_bold_for_light = False  # Will be set when applying colors
+        
+        # Initialize default color pair
+        curses.init_pair(1, -1, -1)  # Default colors
+        self.color_pair_msg = 1
+        self.color_pair_input = 1
+        
+        # Status bar: reverse video
+        curses.init_pair(2, -1, -1)
+        self.color_pair_status = 2
+        self.color_pair_panel = 1
+    
+    def apply_theme(self, theme_name: str) -> bool:
+        """Apply a color theme"""
+        import curses
+        
+        if theme_name not in THEMES:
+            return False
+        
+        bg_name, fg_name = THEMES[theme_name]
+        if not bg_name or not fg_name:
+            # Reset to default
+            self.current_theme = None
+            self.use_bold_for_light = False
+            curses.init_pair(1, -1, -1)
+            curses.init_pair(3, -1, -1)  # Panel
+            self._refresh_colors()
+            return True
+        
+        bg = self.color_map.get(bg_name, -1)
+        fg = self.color_map.get(fg_name, -1)
+        
+        # Check if we need bold for light foreground color (8-color fallback)
+        self.use_bold_for_light = (not self.has_256_colors and fg_name in self.light_colors)
+        
+        try:
+            # Main text color pair
+            curses.init_pair(1, fg, bg)
+            self.color_pair_msg = 1
+            self.color_pair_input = 1
+            
+            # Panel color (same as main)
+            curses.init_pair(3, fg, bg)
+            self.color_pair_panel = 3
+            
+            # Status bar - slightly different
+            curses.init_pair(2, bg, fg)  # Inverted for status
+            self.color_pair_status = 2
+            
+            self.current_theme = theme_name
+            self._refresh_colors()
+            return True
+        except curses.error:
+            return False
+    
+    def apply_colors(self, bg_name: Optional[str], fg_name: Optional[str]) -> bool:
+        """Apply custom foreground/background colors"""
+        import curses
+        
+        bg = self.color_map.get(bg_name, -1) if bg_name else -1
+        fg = self.color_map.get(fg_name, -1) if fg_name else -1
+        
+        # Check if we need bold for light foreground color (8-color fallback)
+        self.use_bold_for_light = (not self.has_256_colors and fg_name in self.light_colors)
+        
+        try:
+            curses.init_pair(1, fg, bg)
+            self.color_pair_msg = 1
+            self.color_pair_input = 1
+            
+            # Panel color
+            curses.init_pair(3, fg, bg)
+            self.color_pair_panel = 3
+            
+            # Status bar inverted
+            if bg != -1 and fg != -1:
+                curses.init_pair(2, bg, fg)
+            self.color_pair_status = 2
+            
+            self.current_theme = None
+            self._refresh_colors()
+            return True
+        except curses.error:
+            return False
+    
+    def _refresh_colors(self):
+        """Refresh all windows with current colors"""
+        import curses
+        
+        # Get the attribute (add BOLD if using light colors in 8-color mode)
+        attr = curses.color_pair(self.color_pair_msg)
+        if self.use_bold_for_light:
+            attr |= curses.A_BOLD
+        
+        if self.msg_win:
+            self.msg_win.bkgd(' ', attr)
+            self._redraw_messages()
+        if self.input_win:
+            self.input_win.bkgd(' ', attr)
+            self._draw_input()
+        if self.panel_win:
+            self.panel_win.bkgd(' ', attr)
+            self._draw_panel()
+        if self.status_win:
+            # Status bar uses reverse attribute
+            pass
+        curses.doupdate()
+        
+    def stop(self):
+        """Cleanup curses"""
+        import curses
+        if self.stdscr:
+            self.running = False
+            curses.nocbreak()
+            self.stdscr.keypad(False)
+            curses.echo()
+            curses.endwin()
+            self.stdscr = None
+            
+    def _create_windows(self):
+        """Create the UI windows with right panel"""
+        import curses
+        height, width = self.stdscr.getmaxyx()
+        
+        # Calculate widths - right panel takes fixed width, message area gets the rest
+        # Minimum width check
+        if width < 60 or self.panel_hidden:
+            # Too narrow for panel or user hid it, use full width for messages
+            msg_width = width
+            panel_visible = False
+        else:
+            panel_visible = True
+            msg_width = width - self.panel_width
+        
+        # Message area: left side, all but last 2 lines
+        msg_height = height - 2
+        self.msg_win = curses.newwin(msg_height, msg_width, 0, 0)
+        self.msg_win.scrollok(True)
+        self.msg_win.idlok(True)
+        self.msg_win.bkgd(' ', curses.color_pair(self.color_pair_msg))
+        
+        # Right panel: connection info + peers
+        if panel_visible:
+            self.panel_win = curses.newwin(msg_height, self.panel_width, 0, msg_width)
+            self.panel_win.bkgd(' ', curses.color_pair(self.color_pair_panel))
+        else:
+            self.panel_win = None
+        
+        # Status bar: second to last line (full width)
+        self.status_win = curses.newwin(1, width, height - 2, 0)
+        
+        # Input line: last line (full width)
+        self.input_win = curses.newwin(1, width, height - 1, 0)
+        self.input_win.keypad(True)
+        self.input_win.bkgd(' ', curses.color_pair(self.color_pair_input))
+        
+        # Initial refresh - use noutrefresh for batched updates
+        self.stdscr.noutrefresh()
+        self._draw_status("")
+        self._draw_panel()
+        self._draw_input()
+        curses.doupdate()
+        
+    def resize(self):
+        """Handle terminal resize"""
+        import curses
+        curses.endwin()
+        self.stdscr.refresh()
+        self._create_windows()
+        self._redraw_messages()
+        self._draw_panel()
+        
+    def _draw_status(self, left_text: str, right_text: str = ""):
+        """Draw status bar with left-aligned info and right-aligned shortcuts"""
+        import curses
+        if not self.status_win:
+            return
+        height, width = self.status_win.getmaxyx()
+        self.status_win.erase()  # erase is faster than clear
+        try:
+            self.status_win.attron(curses.A_REVERSE)
+            
+            # Build the status line with left and right parts
+            if right_text:
+                # Calculate spacing
+                available = width - 1
+                left_len = len(left_text)
+                right_len = len(right_text)
+                
+                if left_len + right_len + 2 <= available:
+                    # Both fit - pad middle with spaces
+                    middle_pad = available - left_len - right_len
+                    status_line = left_text + " " * middle_pad + right_text
+                else:
+                    # Truncate left text to make room for shortcuts
+                    max_left = available - right_len - 3
+                    if max_left > 10:
+                        status_line = left_text[:max_left] + ".. " + right_text
+                    else:
+                        status_line = left_text[:available]
+            else:
+                status_line = left_text[:width-1].ljust(width-1)
+            
+            self.status_win.addstr(0, 0, status_line[:width-1].ljust(width-1))
+            self.status_win.attroff(curses.A_REVERSE)
+        except curses.error:
+            pass
+        self.status_win.noutrefresh()
+    
+    def _draw_panel(self):
+        """Draw the right panel with connection info and peers"""
+        import curses
+        if not self.panel_win:
+            return
+        
+        self.panel_win.erase()
+        height, width = self.panel_win.getmaxyx()
+        
+        try:
+            # Draw border
+            self.panel_win.attron(curses.A_DIM)
+            for y in range(height):
+                self.panel_win.addch(y, 0, '│')
+            self.panel_win.attroff(curses.A_DIM)
+            
+            y = 0
+            inner_width = width - 2  # Account for border
+            
+            # === Connection Card ===
+            self.panel_win.attron(curses.A_BOLD)
+            self.panel_win.addstr(y, 2, "┌─ Connection ")
+            self.panel_win.addstr(y, 2 + 13, "─" * (inner_width - 14) + "┐")
+            self.panel_win.attroff(curses.A_BOLD)
+            y += 1
+            
+            # Room
+            room = self.connection_info.get("room", "") or "Not connected"
+            if self.connection_info.get("password"):
+                room += " 🔒"
+            self.panel_win.addstr(y, 2, f"│ Room: {room[:inner_width-9]}")
+            y += 1
+            
+            # Relays
+            connected = self.connection_info.get("relays_connected", 0)
+            total = self.connection_info.get("relays_total", 0)
+            if connected > 0:
+                relay_str = f"│ Relays: {connected}/{total} ✓"
+            else:
+                relay_str = f"│ Relays: {connected}/{total}"
+            self.panel_win.addstr(y, 2, relay_str[:inner_width])
+            y += 1
+            
+            # Username
+            username = self.connection_info.get("username", "")
+            self.panel_win.addstr(y, 2, f"│ User: {username[:inner_width-9]}")
+            y += 1
+            
+            # Ping ID (truncated)
+            ping_id = self.connection_info.get("ping_id", "")[:8]
+            self.panel_win.addstr(y, 2, f"│ ID: {ping_id}")
+            y += 1
+            
+            # Close connection card
+            self.panel_win.addstr(y, 2, "└" + "─" * (inner_width - 2) + "┘")
+            y += 2
+            
+            # === Peers Card ===
+            peer_count = len(self.peers)
+            keys_count = sum(1 for p in self.peers if p.get("has_key"))
+            
+            self.panel_win.attron(curses.A_BOLD)
+            title = f"┌─ Peers ({peer_count}) "
+            self.panel_win.addstr(y, 2, title)
+            self.panel_win.addstr(y, 2 + len(title), "─" * (inner_width - len(title) - 1) + "┐")
+            self.panel_win.attroff(curses.A_BOLD)
+            y += 1
+            
+            if not self.peers:
+                self.panel_win.attron(curses.A_DIM)
+                self.panel_win.addstr(y, 2, "│ No peers yet...")
+                self.panel_win.attroff(curses.A_DIM)
+                y += 1
+            else:
+                # Show peers (limit to available space)
+                max_peers = height - y - 2
+                for i, peer in enumerate(self.peers[:max_peers]):
+                    username = peer.get("username", "???")[:12]
+                    fp = peer.get("fingerprint", "")[:8]
+                    has_key = "🔑" if peer.get("has_key") else "⏳"
+                    
+                    line = f"│ {has_key} {username}"
+                    if len(line) < inner_width - 1:
+                        # Add fingerprint if space
+                        remaining = inner_width - len(line) - 2
+                        if remaining >= 8:
+                            line += f" [{fp}]"
+                    
+                    self.panel_win.addstr(y, 2, line[:inner_width])
+                    y += 1
+                
+                # Show "+N more" if truncated
+                if len(self.peers) > max_peers:
+                    more = len(self.peers) - max_peers
+                    self.panel_win.attron(curses.A_DIM)
+                    self.panel_win.addstr(y, 2, f"│ +{more} more...")
+                    self.panel_win.attroff(curses.A_DIM)
+                    y += 1
+            
+            # Close peers card (at bottom of panel area)
+            if y < height - 1:
+                self.panel_win.addstr(y, 2, "└" + "─" * (inner_width - 2) + "┘")
+            
+        except curses.error:
+            pass
+        
+        self.panel_win.noutrefresh()
+    
+    def update_connection_info(self, room: str = "", password: str = "", 
+                                relays_connected: int = 0, relays_total: int = 0,
+                                username: str = "", ping_id: str = ""):
+        """Update connection info and redraw panel"""
+        import curses
+        self.connection_info = {
+            "room": room,
+            "password": password,
+            "relays_connected": relays_connected,
+            "relays_total": relays_total,
+            "username": username,
+            "ping_id": ping_id,
+        }
+        self._draw_panel()
+        curses.doupdate()
+    
+    def update_peers(self, peers: list[dict]):
+        """Update peer list and redraw panel. Each peer: {username, fingerprint, has_key}"""
+        import curses
+        self.peers = peers
+        self._draw_panel()
+        curses.doupdate()
+    
+    def _display_width(self, s: str) -> int:
+        """Calculate display width of a string, accounting for wide characters (emojis, CJK)"""
+        import unicodedata
+        width = 0
+        for char in s:
+            # East Asian Width: F(ull), W(ide) = 2 columns, others = 1
+            # Emoji also tend to be wide
+            if unicodedata.east_asian_width(char) in ('F', 'W'):
+                width += 2
+            elif ord(char) >= 0x1F000:  # Emoji range
+                width += 2
+            else:
+                width += 1
+        return width
+    
+    def _cursor_display_pos(self, s: str, char_pos: int) -> int:
+        """Get display column position for a character position in string"""
+        return self._display_width(s[:char_pos])
+        
+    def _draw_input(self):
+        """Draw input line with prompt and current input"""
+        if not self.input_win:
+            return
+        height, width = self.input_win.getmaxyx()
+        self.input_win.erase()  # erase is faster than clear
+        
+        # Show prompt + input buffer
+        display = f"{self.prompt}{self.input_buffer}"
+        try:
+            # Truncate if too long (by display width)
+            display_width = self._display_width(display)
+            if display_width >= width:
+                # Truncate from display
+                truncated = ""
+                w = 0
+                for char in display:
+                    cw = self._display_width(char)
+                    if w + cw >= width - 1:
+                        break
+                    truncated += char
+                    w += cw
+                display = truncated
+            self.input_win.addstr(0, 0, display)
+        except:
+            pass
+        
+        # Position cursor (accounting for display width)
+        prompt_width = self._display_width(self.prompt)
+        cursor_display_x = prompt_width + self._cursor_display_pos(self.input_buffer, self.cursor_pos)
+        if cursor_display_x < width:
+            try:
+                self.input_win.move(0, cursor_display_x)
+            except:
+                pass
+        
+        self.input_win.noutrefresh()
+        
+    def _redraw_messages(self):
+        """Redraw all messages in the message window"""
+        if not self.msg_win:
+            return
+        self.msg_win.erase()  # erase is faster than clear
+        height, width = self.msg_win.getmaxyx()
+        
+        # Calculate visible range based on scroll offset
+        total = len(self.messages)
+        if total <= height:
+            # All messages fit - show all
+            visible_messages = self.messages
+        else:
+            # Calculate window based on scroll offset
+            end_idx = total - self.scroll_offset
+            start_idx = max(0, end_idx - height)
+            visible_messages = self.messages[start_idx:end_idx]
+        
+        for i, msg in enumerate(visible_messages):
+            try:
+                # Truncate long messages
+                self.msg_win.addstr(i, 0, msg[:width-1])
+            except:
+                pass
+        self.msg_win.noutrefresh()
+        
+    def _do_refresh(self):
+        """Perform actual screen update - call after all drawing is done"""
+        import curses
+        curses.doupdate()
+        
+    def add_message(self, text: str):
+        """Add a message to the display"""
+        import curses
+        if not self.msg_win:
+            # Fallback to print
+            print(text)
+            return
+            
+        # Split into lines if needed
+        height, width = self.msg_win.getmaxyx()
+        
+        # Handle multi-line messages
+        for line in text.split('\n'):
+            # Word wrap long lines
+            while len(line) > width - 1:
+                self.messages.append(line[:width-1])
+                line = line[width-1:]
+            self.messages.append(line)
+        
+        # Trim history
+        if len(self.messages) > self.max_messages:
+            self.messages = self.messages[-self.max_messages:]
+        
+        # Reset scroll to bottom when new message arrives
+        self.scroll_offset = 0
+        
+        # Redraw - batch updates
+        self._redraw_messages()
+        self._draw_input()  # Keep input visible
+        curses.doupdate()  # Single screen update
+    
+    def scroll_up(self, lines: int = 1):
+        """Scroll up (view older messages)"""
+        import curses
+        if not self.msg_win:
+            return
+        height, _ = self.msg_win.getmaxyx()
+        max_scroll = max(0, len(self.messages) - height)
+        self.scroll_offset = min(self.scroll_offset + lines, max_scroll)
+        self._redraw_messages()
+        curses.doupdate()
+    
+    def scroll_down(self, lines: int = 1):
+        """Scroll down (view newer messages)"""
+        import curses
+        self.scroll_offset = max(0, self.scroll_offset - lines)
+        self._redraw_messages()
+        curses.doupdate()
+    
+    def scroll_to_bottom(self):
+        """Scroll to latest messages"""
+        import curses
+        self.scroll_offset = 0
+        self._redraw_messages()
+        curses.doupdate()
+    
+    def toggle_panel(self):
+        """Toggle right panel visibility"""
+        self.panel_hidden = not self.panel_hidden
+        self._create_windows()
+        self._redraw_messages()
+        self._draw_panel()
+    
+    def add_to_history(self, line: str):
+        """Add a line to input history"""
+        if line and (not self.input_history or self.input_history[-1] != line):
+            self.input_history.append(line)
+            if len(self.input_history) > self.max_history:
+                self.input_history = self.input_history[-self.max_history:]
+        self.history_index = -1
+        self.history_temp = ""
+    
+    def history_up(self):
+        """Navigate to previous (older) history entry"""
+        import curses
+        if not self.input_history:
+            return
+        
+        if self.history_index == -1:
+            # Starting to browse - save current input
+            self.history_temp = self.input_buffer
+            self.history_index = len(self.input_history) - 1
+        elif self.history_index > 0:
+            self.history_index -= 1
+        else:
+            return  # Already at oldest
+        
+        self.input_buffer = self.input_history[self.history_index]
+        self.cursor_pos = len(self.input_buffer)
+        self._draw_input()
+        curses.doupdate()
+    
+    def history_down(self):
+        """Navigate to next (newer) history entry"""
+        import curses
+        if self.history_index == -1:
+            return  # Not browsing history
+        
+        if self.history_index < len(self.input_history) - 1:
+            self.history_index += 1
+            self.input_buffer = self.input_history[self.history_index]
+        else:
+            # Back to current input
+            self.history_index = -1
+            self.input_buffer = self.history_temp
+        
+        self.cursor_pos = len(self.input_buffer)
+        self._draw_input()
+        curses.doupdate()
+    
+    def do_completion(self):
+        """Perform tab completion"""
+        import curses
+        if not self.completer:
+            return
+        
+        # Get completions
+        line = self.input_buffer
+        
+        # If this is a new completion (not cycling through matches)
+        if not self.completion_matches or self.completion_index == 0:
+            self.completion_matches = []
+            self.completion_index = 0
+            
+            # Get all matches
+            state = 0
+            while True:
+                match = self.completer(line, state)
+                if match is None:
+                    break
+                self.completion_matches.append(match)
+                state += 1
+        
+        if not self.completion_matches:
+            return
+        
+        # Apply completion
+        match = self.completion_matches[self.completion_index]
+        self.input_buffer = match
+        self.cursor_pos = len(self.input_buffer)
+        
+        # Cycle to next match for next Tab press
+        self.completion_index = (self.completion_index + 1) % len(self.completion_matches)
+        
+        self._draw_input()
+        curses.doupdate()
+    
+    def reset_completion(self):
+        """Reset completion state (call when input changes)"""
+        self.completion_matches = []
+        self.completion_index = 0
+        
+    def set_prompt(self, prompt: str):
+        """Set the input prompt"""
+        import curses
+        self.prompt = prompt
+        self._draw_input()
+        curses.doupdate()
+        
+    def set_status(self, left_text: str, right_text: str = ""):
+        """Set status bar text with left info and right shortcuts"""
+        import curses
+        self._draw_status(left_text, right_text)
+        curses.doupdate()
+    
+    def clear_messages(self):
+        """Clear all messages"""
+        import curses
+        self.messages = []
+        self._redraw_messages()
+        curses.doupdate()
+        
+    def get_input_char(self):
+        """Get a single character from input (non-blocking style for async)
+        
+        Returns either:
+        - int: for special keys (arrows, function keys, etc.)
+        - str: for regular characters including Unicode/emoji
+        - -1: on error
+        """
+        import curses
+        if not self.input_win:
+            return -1
+        try:
+            self.input_win.nodelay(False)  # Blocking read
+            # Use get_wch() for Unicode support - returns int for special keys, str for chars
+            return self.input_win.get_wch()
+        except curses.error:
+            return -1
+        except:
+            return -1
+            
+    def handle_key(self, ch) -> Optional[str]:
+        """Handle a keypress, return complete line if Enter pressed
+        
+        Args:
+            ch: Either int (special key) or str (character including Unicode)
+        """
+        import curses
+        
+        needs_refresh = False
+        reset_completion = True  # Reset completion on most keys
+        
+        # Convert string control characters to integers for uniform handling
+        if isinstance(ch, str):
+            if len(ch) == 1:
+                char_ord = ord(ch)
+                # Control characters (0-31) and DEL (127) - convert to int for handling below
+                if char_ord < 32 or char_ord == 127:
+                    ch = char_ord
+                # Printable characters and Unicode - handle here
+                elif char_ord >= 32:
+                    self.input_buffer = (self.input_buffer[:self.cursor_pos] + 
+                                        ch + 
+                                        self.input_buffer[self.cursor_pos:])
+                    self.cursor_pos += len(ch)
+                    self._draw_input()
+                    curses.doupdate()
+                    self.reset_completion()
+                    return None
+            else:
+                # Multi-character string (emoji, etc.)
+                self.input_buffer = (self.input_buffer[:self.cursor_pos] + 
+                                    ch + 
+                                    self.input_buffer[self.cursor_pos:])
+                self.cursor_pos += len(ch)
+                self._draw_input()
+                curses.doupdate()
+                self.reset_completion()
+                return None
+        
+        # Now ch is always an int (either special key or control character)
+        
+        if ch == curses.KEY_RESIZE:
+            self.resize()
+            return None
+        
+        # Mouse is disabled to allow terminal text selection
+        # Use Page Up/Down for scrolling
+            
+        elif ch in (curses.KEY_ENTER, 10, 13):  # Enter
+            line = self.input_buffer
+            if line and line.startswith('/'):
+                # Only save commands to history, not chat messages
+                self.add_to_history(line)
+            self.input_buffer = ""
+            self.cursor_pos = 0
+            self.scroll_offset = 0  # Jump to bottom on Enter
+            self.reset_completion()
+            self._draw_input()
+            curses.doupdate()
+            return line
+        
+        # Tab completion
+        elif ch == 9:  # Tab
+            self.do_completion()
+            reset_completion = False  # Don't reset - allow cycling
+            return None
+        
+        # History navigation (Up/Down arrows)
+        elif ch == curses.KEY_UP:
+            self.history_up()
+            return None
+            
+        elif ch == curses.KEY_DOWN:
+            self.history_down()
+            return None
+        
+        # Ctrl+Up/Down for scrolling chat (key codes vary by terminal)
+        # Common codes: 566/525 (xterm), 480/481 (some terminals)
+        elif ch in (566, 567, 480, 1073741906):  # Ctrl+Up variants
+            self.scroll_up(3)
+            return None
+            
+        elif ch in (525, 526, 481, 1073741905):  # Ctrl+Down variants  
+            self.scroll_down(3)
+            return None
+        
+        # Also support Shift+Up/Down as alternative
+        elif ch == curses.KEY_SR:  # Shift+Up (scroll up)
+            self.scroll_up(3)
+            return None
+            
+        elif ch == curses.KEY_SF:  # Shift+Down (scroll down)
+            self.scroll_down(3)
+            return None
+        
+        # Scroll keys (Page Up/Down)
+        elif ch == curses.KEY_PPAGE:  # Page Up
+            height, _ = self.msg_win.getmaxyx() if self.msg_win else (10, 80)
+            self.scroll_up(height - 2)
+            return None
+            
+        elif ch == curses.KEY_NPAGE:  # Page Down
+            height, _ = self.msg_win.getmaxyx() if self.msg_win else (10, 80)
+            self.scroll_down(height - 2)
+            return None
+            
+        elif ch in (curses.KEY_BACKSPACE, 127, 8, 263):  # Backspace (various codes)
+            if self.cursor_pos > 0:
+                self.input_buffer = (self.input_buffer[:self.cursor_pos-1] + 
+                                    self.input_buffer[self.cursor_pos:])
+                self.cursor_pos -= 1
+                needs_refresh = True
+        
+        elif ch == 27:  # Escape - ignore or could be start of escape sequence
+            # Try to read more to see if it's an escape sequence
+            try:
+                self.input_win.nodelay(True)
+                next_ch = self.input_win.getch()
+                self.input_win.nodelay(False)
+                if next_ch == -1:
+                    # Just escape key pressed, ignore
+                    pass
+                # Otherwise it was an escape sequence, curses should handle it
+            except:
+                pass
+            return None
+                
+        elif ch == curses.KEY_DC:  # Delete
+            if self.cursor_pos < len(self.input_buffer):
+                self.input_buffer = (self.input_buffer[:self.cursor_pos] + 
+                                    self.input_buffer[self.cursor_pos+1:])
+                needs_refresh = True
+                
+        elif ch == curses.KEY_LEFT:
+            if self.cursor_pos > 0:
+                self.cursor_pos -= 1
+                needs_refresh = True
+                
+        elif ch == curses.KEY_RIGHT:
+            if self.cursor_pos < len(self.input_buffer):
+                self.cursor_pos += 1
+                needs_refresh = True
+                
+        elif ch == curses.KEY_HOME or ch == 1:  # Home or Ctrl+A
+            self.cursor_pos = 0
+            needs_refresh = True
+            
+        elif ch == curses.KEY_END or ch == 5:  # End or Ctrl+E
+            self.cursor_pos = len(self.input_buffer)
+            needs_refresh = True
+        
+        # === Custom Shortcuts ===
+        elif ch == 6:  # Ctrl+F - toggle panel
+            self.toggle_panel()
+            return None
+            
+        elif ch == 20:  # Ctrl+T - cycle theme
+            if self.on_cycle_theme:
+                self.on_cycle_theme()
+            return None
+        # === End Custom Shortcuts ===
+            
+        elif ch == 21:  # Ctrl+U - clear line
+            self.input_buffer = ""
+            self.cursor_pos = 0
+            needs_refresh = True
+            
+        elif ch == 23:  # Ctrl+W - delete word
+            # Delete word before cursor
+            if self.cursor_pos > 0:
+                # Find start of word
+                pos = self.cursor_pos - 1
+                while pos > 0 and self.input_buffer[pos-1] == ' ':
+                    pos -= 1
+                while pos > 0 and self.input_buffer[pos-1] != ' ':
+                    pos -= 1
+                self.input_buffer = self.input_buffer[:pos] + self.input_buffer[self.cursor_pos:]
+                self.cursor_pos = pos
+                needs_refresh = True
+        
+        # Note: Printable characters including Unicode are handled at the top
+        # via isinstance(ch, str) check from get_wch()
+        
+        if needs_refresh:
+            self._draw_input()
+            curses.doupdate()
+        
+        # Reset completion state when input changes (except for Tab)
+        if reset_completion:
+            self.reset_completion()
+            
+        return None
+
+
+class LoginWindow:
+    """Curses-based login window for username, room, and password"""
+    
+    def __init__(self, stdscr, default_username: str = "", default_room: str = "", default_password: str = ""):
+        self.stdscr = stdscr
+        self.fields = [
+            {"label": "Username", "value": default_username, "hidden": False},
+            {"label": "Room", "value": default_room, "hidden": False},
+            {"label": "Password", "value": default_password, "hidden": True},
+        ]
+        self.current_field = 0
+        self.cursor_pos = len(self.fields[0]["value"])
+        self.cancelled = False
+        
+    def run(self) -> Optional[tuple[str, str, str]]:
+        """Run the login window, returns (username, room, password) or None if cancelled"""
+        import curses
+        
+        curses.curs_set(1)  # Show cursor
+        
+        while True:
+            self._draw()
+            ch = self.stdscr.getch()
+            
+            if ch == 27:  # Escape - cancel
+                self.cancelled = True
+                return None
+            
+            elif ch in (curses.KEY_ENTER, 10, 13):  # Enter
+                if self.current_field < len(self.fields) - 1:
+                    # Move to next field
+                    self.current_field += 1
+                    self.cursor_pos = len(self.fields[self.current_field]["value"])
+                else:
+                    # Submit - validate
+                    username = self.fields[0]["value"].strip()
+                    room = self.fields[1]["value"].strip()
+                    password = self.fields[2]["value"]
+                    
+                    if not username:
+                        self._show_error("Username is required")
+                        self.current_field = 0
+                        continue
+                    
+                    # Room and password are optional
+                    return (username, room, password)
+            
+            elif ch == 9:  # Tab - next field
+                self.current_field = (self.current_field + 1) % len(self.fields)
+                self.cursor_pos = len(self.fields[self.current_field]["value"])
+            
+            elif ch == curses.KEY_BTAB or ch == 353:  # Shift+Tab - previous field
+                self.current_field = (self.current_field - 1) % len(self.fields)
+                self.cursor_pos = len(self.fields[self.current_field]["value"])
+            
+            elif ch == curses.KEY_UP:
+                if self.current_field > 0:
+                    self.current_field -= 1
+                    self.cursor_pos = len(self.fields[self.current_field]["value"])
+            
+            elif ch == curses.KEY_DOWN:
+                if self.current_field < len(self.fields) - 1:
+                    self.current_field += 1
+                    self.cursor_pos = len(self.fields[self.current_field]["value"])
+            
+            elif ch in (curses.KEY_BACKSPACE, 127, 8):
+                field = self.fields[self.current_field]
+                if self.cursor_pos > 0:
+                    field["value"] = field["value"][:self.cursor_pos-1] + field["value"][self.cursor_pos:]
+                    self.cursor_pos -= 1
+            
+            elif ch == curses.KEY_DC:  # Delete
+                field = self.fields[self.current_field]
+                if self.cursor_pos < len(field["value"]):
+                    field["value"] = field["value"][:self.cursor_pos] + field["value"][self.cursor_pos+1:]
+            
+            elif ch == curses.KEY_LEFT:
+                if self.cursor_pos > 0:
+                    self.cursor_pos -= 1
+            
+            elif ch == curses.KEY_RIGHT:
+                if self.cursor_pos < len(self.fields[self.current_field]["value"]):
+                    self.cursor_pos += 1
+            
+            elif ch == curses.KEY_HOME or ch == 1:  # Ctrl+A
+                self.cursor_pos = 0
+            
+            elif ch == curses.KEY_END or ch == 5:  # Ctrl+E
+                self.cursor_pos = len(self.fields[self.current_field]["value"])
+            
+            elif ch == 21:  # Ctrl+U - clear field
+                self.fields[self.current_field]["value"] = ""
+                self.cursor_pos = 0
+            
+            elif 32 <= ch <= 126:  # Printable ASCII
+                field = self.fields[self.current_field]
+                field["value"] = field["value"][:self.cursor_pos] + chr(ch) + field["value"][self.cursor_pos:]
+                self.cursor_pos += 1
+    
+    def _draw(self):
+        """Draw the login window"""
+        import curses
+        
+        self.stdscr.clear()
+        height, width = self.stdscr.getmaxyx()
+        
+        # Box dimensions
+        box_width = 50
+        box_height = 14
+        start_y = (height - box_height) // 2
+        start_x = (width - box_width) // 2
+        
+        # Draw border
+        try:
+            # Title
+            title = " 🏓 Ping - Login "
+            self.stdscr.addstr(start_y, start_x + (box_width - len(title)) // 2, title, curses.A_BOLD)
+            
+            # Box
+            self.stdscr.addstr(start_y + 1, start_x, "┌" + "─" * (box_width - 2) + "┐")
+            for i in range(2, box_height - 1):
+                self.stdscr.addstr(start_y + i, start_x, "│" + " " * (box_width - 2) + "│")
+            self.stdscr.addstr(start_y + box_height - 1, start_x, "└" + "─" * (box_width - 2) + "┘")
+            
+            # Fields
+            field_start_y = start_y + 3
+            label_x = start_x + 3
+            input_x = start_x + 14
+            input_width = box_width - 17
+            
+            for i, field in enumerate(self.fields):
+                # Label
+                attr = curses.A_BOLD if i == self.current_field else curses.A_NORMAL
+                self.stdscr.addstr(field_start_y + i * 2, label_x, f"{field['label']}:", attr)
+                
+                # Input field background
+                self.stdscr.addstr(field_start_y + i * 2, input_x, "[" + " " * input_width + "]")
+                
+                # Input value
+                value = field["value"]
+                if field["hidden"] and value:
+                    display = "*" * len(value)
+                else:
+                    display = value
+                
+                # Truncate if too long
+                if len(display) > input_width:
+                    display = display[-(input_width):]
+                
+                self.stdscr.addstr(field_start_y + i * 2, input_x + 1, display)
+            
+            # Instructions
+            inst_y = start_y + box_height - 3
+            self.stdscr.addstr(inst_y, start_x + 3, "Tab/↑↓: Navigate  Enter: Next/Submit", curses.A_DIM)
+            self.stdscr.addstr(inst_y + 1, start_x + 3, "Esc: Cancel       Room/Pass optional", curses.A_DIM)
+            
+            # Position cursor
+            field = self.fields[self.current_field]
+            cursor_y = field_start_y + self.current_field * 2
+            
+            # Calculate visible cursor position
+            value = field["value"]
+            input_width_actual = box_width - 17
+            if len(value) > input_width_actual:
+                # Scrolled view
+                visible_cursor = input_width_actual
+            else:
+                visible_cursor = self.cursor_pos
+            
+            cursor_x = input_x + 1 + min(visible_cursor, input_width_actual)
+            self.stdscr.move(cursor_y, cursor_x)
+            
+        except curses.error:
+            pass
+        
+        self.stdscr.refresh()
+    
+    def _show_error(self, message: str):
+        """Briefly show an error message"""
+        import curses
+        import time
+        
+        height, width = self.stdscr.getmaxyx()
+        y = height // 2 + 5
+        x = (width - len(message) - 4) // 2
+        
+        try:
+            self.stdscr.addstr(y, x, f"⚠️  {message}", curses.A_BOLD)
+            self.stdscr.refresh()
+            time.sleep(1)
+        except curses.error:
+            pass
+
+
+def ui_print(text: str):
+    """Print to UI (curses or fallback)"""
+    global CURSES_UI
+    if CURSES_UI and CURSES_UI.running:
+        CURSES_UI.add_message(text)
+    else:
+        print(text)
+
+def ui_set_prompt(prompt: str):
+    """Set UI prompt"""
+    global CURSES_UI
+    if CURSES_UI and CURSES_UI.running:
+        CURSES_UI.set_prompt(prompt)
+
+def ui_set_status(text: str):
+    """Set UI status bar"""
+    global CURSES_UI
+    if CURSES_UI and CURSES_UI.running:
+        CURSES_UI.set_status(text)
+
+
+# Legacy compatibility - these do nothing now but kept for any remaining calls
+TERM_UI_ENABLED = False
+CURRENT_PROMPT = "> "
+
+def setup_scroll_region():
+    pass
 
 def reset_scroll_region():
-    """Reset scroll region to full terminal"""
-    if not TERM_UI_ENABLED:
-        return
-    print("\033[r", end='', flush=True)
+    pass
 
 def move_to_input_line():
-    """Move cursor to the fixed input line at bottom"""
-    global TERM_ROWS
-    if not TERM_UI_ENABLED:
-        return
-    TERM_ROWS, _ = get_terminal_size()
-    # Save cursor, move to last line, clear it
-    print(f"\033[{TERM_ROWS};1H\033[2K", end='', flush=True)
+    pass
 
 def print_above_input(text: str, prompt: str = ""):
-    """Print text in the scroll region, preserving input line and typed text"""
-    global CURRENT_PROMPT
-    if not TERM_UI_ENABLED:
-        print(f"\r{text}")
-        if prompt:
-            print(prompt, end='', flush=True)
-        return
-    
+    """Print text - routes to curses UI or fallback"""
+    ui_print(text)
     if prompt:
-        CURRENT_PROMPT = prompt
-    
-    # Try to get current input buffer from readline
-    current_input = ""
-    cursor_pos = 0
-    try:
-        import readline
-        current_input = readline.get_line_buffer()
-        cursor_pos = readline.get_begidx()  # Not perfect but helps
-    except:
-        pass
-    
-    rows, cols = get_terminal_size()
-    
-    # Move to bottom of scroll region (line above input)
-    print(f"\033[{rows - 1};1H", end='', flush=True)
-    
-    # Scroll up and print new line
-    print(f"\033[S", end='', flush=True)  # Scroll up one line
-    print(f"\033[{rows - 1};1H", end='', flush=True)  # Move to that line
-    print(f"\033[2K{text}", end='', flush=True)  # Clear line and print
-    
-    # Move to input line and redraw prompt + current input
-    print(f"\033[{rows};1H\033[2K{CURRENT_PROMPT}{current_input}", end='', flush=True)
-
-def redraw_input_line(prompt: str):
-    """Redraw just the input line"""
-    global CURRENT_PROMPT
-    CURRENT_PROMPT = prompt
-    if not TERM_UI_ENABLED:
-        print(prompt, end='', flush=True)
-        return
-    
-    # Try to get current input buffer
-    current_input = ""
-    try:
-        import readline
-        current_input = readline.get_line_buffer()
-    except:
-        pass
-    
-    rows, _ = get_terminal_size()
-    print(f"\033[{rows};1H\033[2K{prompt}{current_input}", end='', flush=True)
+        ui_set_prompt(prompt)
 
 def print_stream(text: str):
-    """Print text to the message stream (handles multi-line). 
-    Use this for command output that should appear in the chat stream."""
-    if not TERM_UI_ENABLED:
-        print(text)
-        return
-    
-    # Try to get current input buffer from readline
-    current_input = ""
-    try:
-        import readline
-        current_input = readline.get_line_buffer()
-    except:
-        pass
-    
-    # Split into lines and print each one
-    lines = text.split('\n')
-    for line in lines:
-        rows, cols = get_terminal_size()
-        
-        # Move to bottom of scroll region
-        print(f"\033[{rows - 1};1H", end='', flush=True)
-        
-        # Scroll up and print new line
-        print(f"\033[S", end='', flush=True)
-        print(f"\033[{rows - 1};1H", end='', flush=True)
-        print(f"\033[2K{line}", end='', flush=True)
-    
-    # Redraw prompt + current input at bottom
-    rows, _ = get_terminal_size()
-    print(f"\033[{rows};1H\033[2K{CURRENT_PROMPT}{current_input}", end='', flush=True)
+    """Print text to the message stream"""
+    ui_print(text)
 
 
 # ==============================================================================
@@ -1880,8 +2944,13 @@ class Storage:
     
     @staticmethod
     def export_config(identity: Identity, username: str, room: Optional[str] = None, 
-                       room_password: Optional[str] = None) -> tuple[Path, bool]:
-        """Export session, username, and settings to pingconfig.json"""
+                       room_password: Optional[str] = None,
+                       chat_history: Optional[list] = None) -> tuple[Path, bool]:
+        """Export session, username, and settings to pingconfig.json
+        
+        Args:
+            chat_history: Optional list of message dicts with keys: timestamp, sender, content
+        """
         import base64
         
         config_path = Storage.get_config_path()
@@ -1912,6 +2981,10 @@ class Storage:
             } if room else None,
             "exported_at": time.time() * 1000,
         }
+        
+        # Add chat history if provided
+        if chat_history:
+            config["chat_history"] = chat_history
         
         try:
             config_path.write_text(json.dumps(config, indent=2))
@@ -2205,9 +3278,9 @@ class NostrClient:
             if await relay.connect():
                 self.relays.append(relay)
                 connected += 1
-                print(f"    ✓ {url}")
+                ui_print(f"    ✓ {url}")
             else:
-                print(f"    ✗ {url}")
+                ui_print(f"    ✗ {url}")
         
         if connected > 0:
             self.running = True
@@ -2219,9 +3292,9 @@ class NostrClient:
                 await self.privacy_shield.initialize()
                 if DEBUG:
                     if self.hardened_mode:
-                        print(f"    [debug] Privacy Shield: HARDENED (full protection)")
+                        ui_print(f"    [debug] Privacy Shield: HARDENED (full protection)")
                     else:
-                        print(f"    [debug] Privacy Shield: DEFAULT (envelopes + ephemeral)")
+                        ui_print(f"    [debug] Privacy Shield: DEFAULT (envelopes + ephemeral)")
             elif DEBUG:
                 print(f"    [debug] Privacy Shield: LEGACY (disabled)")
         
@@ -2505,19 +3578,73 @@ class NostrClient:
         
         return True
     
-    async def send_dm(self, username: str, text: str) -> bool:
-        """Send direct message to a specific peer by username"""
-        # Find peer by username
+    async def send_dm(self, target: str, text: str) -> tuple[bool, Optional[str], Optional[str]]:
+        """Send direct message to a specific peer by username, fingerprint, or ping_id
+        
+        Args:
+            target: Username, fingerprint (8+ chars), ping_id, or username[fingerprint] format
+            text: Message to send
+            
+        Returns:
+            (success, matched_username, matched_fingerprint) or (False, None, None)
+        """
+        import re
+        
         target_peer = None
         target_pk = None
-        for pk, peer in self.peers.items():
-            if peer.username.lower() == username.lower() and peer.encryption_pubkey:
-                target_peer = peer
-                target_pk = pk
-                break
         
-        if not target_peer:
-            return False
+        # Parse username[fingerprint] format from tab completion
+        username_hint = None
+        fingerprint_hint = None
+        match = re.match(r'^(.+?)\[([a-fA-F0-9]+)\]$', target)
+        if match:
+            username_hint = match.group(1).lower()
+            fingerprint_hint = match.group(2).lower()
+        
+        target_lower = target.lower()
+        
+        # Try to find peer - check multiple match strategies
+        matches = []
+        
+        for pk, peer in self.peers.items():
+            if not peer.encryption_pubkey:
+                continue  # Skip peers without keys
+            
+            fingerprint = peer.identity[:8] if peer.identity else pk[:8]
+            ping_id = peer.identity if peer.identity else ""
+            
+            # If we have username[fingerprint] format, match both
+            if username_hint and fingerprint_hint:
+                if (peer.username.lower() == username_hint and 
+                    fingerprint.lower() == fingerprint_hint):
+                    matches.append((pk, peer, "exact"))
+                continue
+            
+            # Exact username match
+            if peer.username.lower() == target_lower:
+                matches.append((pk, peer, "username"))
+            # Fingerprint match (first 8 chars of ping_id)
+            elif fingerprint.lower() == target_lower or fingerprint.lower().startswith(target_lower):
+                matches.append((pk, peer, "fingerprint"))
+            # Full ping_id match
+            elif ping_id.lower() == target_lower or ping_id.lower().startswith(target_lower):
+                matches.append((pk, peer, "ping_id"))
+            # Nostr pubkey match
+            elif pk.lower().startswith(target_lower):
+                matches.append((pk, peer, "nostr_pk"))
+        
+        if len(matches) == 0:
+            return False, None, None
+        elif len(matches) == 1:
+            target_pk, target_peer, _ = matches[0]
+        else:
+            # Multiple matches - try to find exact match
+            exact = [m for m in matches if m[2] == "username" and m[1].username.lower() == target_lower]
+            if len(exact) == 1:
+                target_pk, target_peer, _ = exact[0]
+            else:
+                # Ambiguous - return first match but this shouldn't happen with fingerprint
+                target_pk, target_peer, _ = matches[0]
         
         msg_id = gen_msg_id()
         ts = time.time() * 1000
@@ -2548,11 +3675,13 @@ class NostrClient:
             event.sign(self.identity.nostr_keys)
             
             await self._publish(event)
-            return True
+            
+            fingerprint = target_peer.identity[:8] if target_peer.identity else target_pk[:8]
+            return True, target_peer.username, fingerprint
         except Exception as e:
             if DEBUG:
                 print(f"    [debug] DM send error: {e}")
-            return False
+            return False, None, None
     
     async def reconnect(self) -> int:
         """Reconnect to relays without leaving room"""
@@ -2568,9 +3697,9 @@ class NostrClient:
             if await relay.connect():
                 self.relays.append(relay)
                 connected += 1
-                print(f"    ✓ {url}")
+                ui_print(f"    ✓ {url}")
             else:
-                print(f"    ✗ {url}")
+                ui_print(f"    ✗ {url}")
         
         if connected > 0:
             # Re-subscribe to room if in one
@@ -2636,11 +3765,11 @@ class NostrClient:
             if len(msg) >= 4 and msg[2] == False:
                 # Only show rejections in debug mode
                 if DEBUG:
-                    print(f"\r    [relay] Rejected: {msg[3]}")
+                    ui_print(f"    [relay] Rejected: {msg[3]}")
         
         elif msg_type == "NOTICE":
             if DEBUG and len(msg) >= 2:
-                print(f"\r    [relay] {msg[1]}")
+                ui_print(f"    [relay] {msg[1]}")
     
     async def _handle_event(self, event: NostrEvent):
         """Handle incoming event (protected or legacy)"""
@@ -2799,10 +3928,15 @@ class NostrClient:
             return
         self.seen_messages.add(msg_id)
         
+        # Prefer peer's current username (in case they changed it)
+        sender_pk = event.pubkey
+        peer = self.peers.get(sender_pk)
+        sender_name = (peer.username if peer and peer.username else None) or envelope.sender_username or "unknown"
+        
         if self.on_message:
             self.on_message(
-                event.pubkey,
-                envelope.sender_username,
+                sender_pk,
+                sender_name,
                 payload.get("c", ""),
                 envelope.timestamp,
                 msg_id
@@ -2814,7 +3948,9 @@ class NostrClient:
         
         peer = self.peers.pop(nostr_pk, None)
         if peer and self.on_leave:
-            self.on_leave(nostr_pk, envelope.sender_username)
+            # Use peer's stored username (most up-to-date)
+            username = peer.username or envelope.sender_username or "unknown"
+            self.on_leave(nostr_pk, username)
     
     async def _handle_presence(self, event: NostrEvent):
         """Handle presence announcement"""
@@ -2868,7 +4004,9 @@ class NostrClient:
                 self.peers[nostr_pk] = Peer(nostr_pubkey=nostr_pk)
             
             peer = self.peers[nostr_pk]
-            peer.username = content.get("username", "unknown")
+            old_username = peer.username
+            new_username = content.get("username", "unknown")
+            peer.username = new_username
             peer.identity = content.get("ping_id", "")
             peer.last_seen = time.time()
             
@@ -2878,7 +4016,9 @@ class NostrClient:
                 peer.encryption_pubkey = X25519KeyPair.from_jwk(enc_jwk)
                 
                 # Notify if this is a new key (first time we got their key)
-                if not had_key and self.on_key_exchange:
+                # or if username changed (name update)
+                username_changed = old_username and old_username != new_username
+                if (not had_key or username_changed) and self.on_key_exchange:
                     self.on_key_exchange(nostr_pk, peer.username, peer.identity)
                 
                 # Only send our key back once when we first see this peer
@@ -2908,11 +4048,12 @@ class NostrClient:
             decrypted = Crypto.decrypt(payload, self.identity.encryption_keys)
             content = json.loads(decrypted)
             
-            # Get sender info - try peer lookup first, fall back to message content
+            # Get sender info - prefer peer list (has latest name) over message content
             sender_pk = event.pubkey
             peer = self.peers.get(sender_pk)
-            # Username is in encrypted content, use that as primary source
-            sender_name = content.get("u") or (peer.username if peer else "unknown")
+            # Use peer's current username if available (in case they changed it)
+            # Fall back to message content if peer not found
+            sender_name = (peer.username if peer and peer.username else None) or content.get("u") or "unknown"
             
             if self.on_message:
                 self.on_message(
@@ -2965,7 +4106,8 @@ class NostrClient:
             
             sender_pk = event.pubkey
             peer = self.peers.get(sender_pk)
-            sender_name = peer.username if peer else content.get("u", "unknown")
+            # Use peer's current username if available (in case they changed it)
+            sender_name = (peer.username if peer and peer.username else None) or content.get("u") or "unknown"
             
             if self.on_dm:
                 self.on_dm(
@@ -3058,6 +4200,11 @@ class PingNostrCLI:
         self.client: Optional[NostrClient] = None
         self.running = False
         
+        # Dice challenge state
+        self.pending_challenge: Optional[dict] = None  # {challenger, challenger_fp, timestamp}
+        self.active_challenge: Optional[dict] = None   # {opponent, opponent_fp, my_roll, opponent_roll}
+        self.outgoing_challenge: Optional[dict] = None # {target, target_fp, timestamp}
+        
         # Setup readline for history and tab completion
         self._setup_readline()
     
@@ -3111,6 +4258,209 @@ class PingNostrCLI:
                 self._readline.write_history_file(str(self._history_file))
             except Exception:
                 pass
+    
+    def _curses_completer(self, line: str, state: int) -> Optional[str]:
+        """Tab completion handler for curses mode"""
+        try:
+            # Check if we're completing a /dm command
+            if line.startswith('/dm ') or line.startswith('/d '):
+                return self._complete_dm_curses(line, state)
+            
+            # Check if we're completing a /color command
+            if line.startswith('/color '):
+                return self._complete_color_curses(line, state)
+            
+            # Check if we're completing a command
+            if line.startswith('/'):
+                return self._complete_command_curses(line, state)
+            
+            # Check if we're completing an @mention
+            if '@' in line:
+                return self._complete_mention_curses(line, state)
+            
+            return None
+        except Exception:
+            return None
+    
+    def _complete_mention_curses(self, line: str, state: int) -> Optional[str]:
+        """Complete @mentions in regular messages"""
+        import re
+        
+        if not self.client or not self.client.peers:
+            return None
+        
+        # Find the last @ and what follows
+        match = re.search(r'@(\w*)(?:\[([a-fA-F0-9]*)\]?)?$', line)
+        if not match:
+            return None
+        
+        at_pos = match.start()
+        prefix = match.group(1).lower() if match.group(1) else ""
+        partial_fp = match.group(2).lower() if match.group(2) else None
+        
+        # Build list of targets
+        targets = []
+        seen_usernames = {}
+        
+        for pk, peer in self.client.peers.items():
+            if not peer.username:
+                continue
+            fingerprint = peer.identity[:8] if peer.identity else pk[:8]
+            
+            if peer.username.lower() not in seen_usernames:
+                seen_usernames[peer.username.lower()] = []
+            seen_usernames[peer.username.lower()].append(fingerprint)
+            
+            targets.append((peer.username, fingerprint))
+        
+        # Build matches
+        matches = []
+        for username, fingerprint in targets:
+            has_duplicates = len(seen_usernames.get(username.lower(), [])) > 1
+            
+            # If user is typing fingerprint part
+            if partial_fp is not None:
+                if fingerprint.lower().startswith(partial_fp):
+                    matches.append(f"@{username}[{fingerprint}]")
+            # Matching by username
+            elif username.lower().startswith(prefix):
+                if has_duplicates:
+                    matches.append(f"@{username}[{fingerprint}]")
+                else:
+                    matches.append(f"@{username}")
+            # Matching by fingerprint (e.g., @abc...)
+            elif fingerprint.lower().startswith(prefix):
+                matches.append(f"@{username}[{fingerprint}]")
+        
+        matches = list(set(matches))
+        matches.sort()
+        
+        if state < len(matches):
+            # Replace the @mention part with completed version
+            before_at = line[:at_pos]
+            return before_at + matches[state] + " "
+        return None
+    
+    def _complete_command_curses(self, line: str, state: int) -> Optional[str]:
+        """Complete command names for curses mode"""
+        commands = [
+            '/join', '/leave', '/invite', '/peers', '/name', '/dm',
+            '/reconnect', '/color', '/printsession', '/relays', '/info', '/clear',
+            '/sound', '/save', '/load', '/update', '/wipe', '/quit', '/help', 
+            '/roll', '/challenge', '/accept', '/decline', '/sticker'
+        ]
+        
+        # Filter commands that match the current input
+        matches = [c for c in commands if c.startswith(line)]
+        
+        if state < len(matches):
+            return matches[state] + ' '  # Add space after command
+        return None
+    
+    def _complete_dm_curses(self, line: str, state: int) -> Optional[str]:
+        """Complete peer usernames/fingerprints for /dm command in curses mode"""
+        if not self.client or not self.client.peers:
+            return None
+        
+        # Build list of completion targets: username and username[fingerprint]
+        targets = []
+        seen_usernames = {}
+        
+        for pk, peer in self.client.peers.items():
+            if not peer.username:
+                continue
+            fingerprint = peer.identity[:8] if peer.identity else pk[:8]
+            
+            # Track duplicate usernames
+            if peer.username.lower() in seen_usernames:
+                seen_usernames[peer.username.lower()].append(fingerprint)
+            else:
+                seen_usernames[peer.username.lower()] = [fingerprint]
+            
+            targets.append((peer.username, fingerprint))
+        
+        # Parse the line
+        parts = line.split()
+        
+        if len(parts) == 1:
+            # Just "/dm" - show all targets
+            prefix = ""
+        elif len(parts) == 2 and not line.endswith(' '):
+            # "/dm par" - completing target
+            prefix = parts[1].lower()
+        else:
+            # Already have target, no completion
+            return None
+        
+        # Build matches - show fingerprint for duplicates
+        matches = []
+        for username, fingerprint in targets:
+            # Check if this username has duplicates
+            has_duplicates = len(seen_usernames.get(username.lower(), [])) > 1
+            
+            if username.lower().startswith(prefix):
+                if has_duplicates:
+                    # Show with fingerprint for disambiguation
+                    matches.append(f"{username}[{fingerprint}]")
+                else:
+                    matches.append(username)
+            elif fingerprint.lower().startswith(prefix):
+                # Also allow completing by fingerprint
+                matches.append(fingerprint)
+        
+        matches = list(set(matches))  # Remove duplicates
+        matches.sort()
+        
+        if state < len(matches):
+            # Return full line with completed target
+            return f"{parts[0]} {matches[state]} "
+        return None
+    
+    def _complete_color_curses(self, line: str, state: int) -> Optional[str]:
+        """Complete color and theme names for /color command in curses mode"""
+        # Colors
+        color_names = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white',
+                       'lblack', 'lred', 'lgreen', 'lyellow', 'lblue', 'lmagenta', 'lcyan', 'lwhite',
+                       'gray', 'grey', 'default', 'none', 'reset', '-']
+        
+        # Themes
+        theme_names = list(THEMES.keys())
+        
+        # Special commands
+        special = ['list', 'themes', 'help']
+        
+        parts = line.split()
+        
+        # Determine which argument we're completing
+        if len(parts) == 1:
+            # Just "/color" - show themes, colors, and special commands
+            prefix = ""
+            all_options = theme_names + color_names + special
+        elif len(parts) == 2 and not line.endswith(' '):
+            # "/color ma" - completing first arg
+            prefix = parts[1].lower()
+            all_options = theme_names + color_names + special
+        elif len(parts) == 2 and line.endswith(' '):
+            # "/color blue " - completing fg (only colors, not themes)
+            prefix = ""
+            all_options = color_names
+        elif len(parts) == 3 and not line.endswith(' '):
+            # "/color blue whi" - completing fg
+            prefix = parts[2].lower()
+            all_options = color_names
+        else:
+            return None
+        
+        matches = [c for c in all_options if c.startswith(prefix)]
+        matches.sort()
+        
+        if state < len(matches):
+            # Build completed line
+            if len(parts) <= 2 and not line.endswith(' '):
+                return f"/color {matches[state]} "
+            else:
+                return f"{parts[0]} {parts[1]} {matches[state]}"
+        return None
     
     def _completer(self, text: str, state: int) -> Optional[str]:
         """Tab completion handler"""
@@ -3225,68 +4575,91 @@ class PingNostrCLI:
             return matches[state] + ' '
         return None
     
-    def _banner(self):
-        print('''
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+= +#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+.      .@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#           @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#:          @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@.          +@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*          +@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@#-   =%@@@@@@@@@@@@@@@@          +*+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@*       #@@@@@@@@@@@@@@@+              =+++#@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@=        @@@@@@@@@@@@@@@@#                   =+@@@@@@@@@@@@@@@@@@@
-@@@@@@@@#       -@@@@@@@@@@@@@@#=                       =+%@@@@@@@@@@@@@@@
-@@@@@@@@@@+.     =#@@@@@@@@@@*:                            .=+#@@@@@@@@@@@
-@@@@@@@@@@@@#      .+*@@@@+                                    .#@@@@@@@@@
-@@@@@@@@@@@@@@+ =       -                                 :       -+@@@@@@
-@@* #@@@@@@@@@@@@#:                                  #@*+#@@#=      :#@@@@
-@@#+%@@@@@@@@@@@@@@#=      :=+-                     :@@@@@@@@@@+=-  .#@@@@
-@@@@@@@@@@@@@@@@@@@@@@@++#@@@@@@+                   -@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+                   @@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#                 =@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#                +@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+               =@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+               +@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@:               :@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@:                 %@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@:                  =@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@:                    @@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@ Decentralized E2E Encrypted Messenger @@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-''')
-        print(f"  Version:   {APP_VERSION}")
-        print(f"  Username:  {self.username}")
-        print(f"  Ping ID:   {self.identity.id}")
-        print(f"  Nostr:     {self.identity.npub[:20]}...")
+    def _get_banner_lines(self) -> list[str]:
+        """Get banner as list of strings for curses display"""
+        lines = [
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+= +#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+.      .@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#           @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#:          @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@.          +@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*          +@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@#-   =%@@@@@@@@@@@@@@@@          +*+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@*       #@@@@@@@@@@@@@@@+              =+++#@@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@=        @@@@@@@@@@@@@@@@#                   =+@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@#       -@@@@@@@@@@@@@@#=                       =+%@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@+.     =#@@@@@@@@@@*:                            .=+#@@@@@@@@@@@",
+            #"@@@@@@@@@@@@#      .+*@@@@+                                    .#@@@@@@@@@",
+            #"@@@@@@@@@@@@@@+ =       -                                 :       -+@@@@@@",
+            #"@@* #@@@@@@@@@@@@#:                                  #@*+#@@#=      :#@@@@",
+            #"@@#+%@@@@@@@@@@@@@@#=      :=+-                     :@@@@@@@@@@+=-  .#@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@++#@@@@@@+                   -@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+                   @@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#                 =@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#                +@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+               =@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+               +@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@:               :@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@:                 %@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@:                  =@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@:                    @@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@ Decentralized E2E Encrypted Messenger @@@@@@@@@@@@@@@@@",
+            #"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+            "    ____  _            ",
+            "   / __ \\(_)___  ____ _",
+            "  / /_/ / / __ \\/ __ `/",
+            " / ____/ / / / / /_/ / ",
+            "/_/   /_/_/ /_/\\__, /  ",
+            "              /____/   ",
+            "",
+            f"  Version:   {APP_VERSION}",
+            f"  Username:  {self.username}",
+            f"  Ping ID:   {self.identity.id}",
+            f"  Nostr:     {self.identity.npub[:20]}...",
+        ]
+        
         if self.memory_only:
-            print(f"  Mode:      Ephemeral (use /save to export, --load to restore)")
+            lines.append(f"  Mode:      Ephemeral (use /save to export, --load to restore)")
         else:
-            print(f"  Mode:      Persistent")
-            print(f"  Data:      {DATA_DIR}")
-        print(f"  Relays:    {len(NOSTR_RELAYS)} configured")
+            lines.append(f"  Mode:      Persistent")
+            lines.append(f"  Data:      {DATA_DIR}")
+        
+        lines.append(f"  Relays:    {len(NOSTR_RELAYS)} configured")
         
         # Privacy status
         if self.legacy_mode:
-            print(f"  Privacy:   Legacy (E2E only)")
+            lines.append(f"  Privacy:   Legacy (E2E only)")
         elif self.hardened_mode:
-            print(f"  Privacy:   X25519+ChaCha20-Poly1305+HKDF (hardened)")
+            lines.append(f"  Privacy:   X25519+ChaCha20-Poly1305+HKDF (hardened)")
         else:
-            print(f"  Privacy:   X25519+ChaCha20-Poly1305+HKDF")
-        print()
+            lines.append(f"  Privacy:   X25519+ChaCha20-Poly1305+HKDF")
+        
+        lines.append("")
+        
+        # Quick reference box
+        lines.extend([
+            "  ┌─ Quick Reference ─────────────────────────────────┐",
+            "  │ Room:  /join /leave /invite /peers              │",
+            "  │ Chat:  /dm /name  View: /info /relays /clear    │",
+            "  │ Config: /color /sound  Data: /save /load /wipe  │",
+            "  └─────────────────────── Type /help for details ──┘",
+            "",
+        ])
+        
+        return lines
+    
+    def _banner(self):
+        # Print banner for classic mode
+        for line in self._get_banner_lines():
+            print(line)
     
     def _quick_help(self):
-        """Show compact command reference on startup"""
-        print("""  ┌─ Quick Reference ─────────────────────────────────┐
-  │ Room:  /join /leave /invite /peers              │
-  │ Chat:  /dm /name  View: /info /relays /clear    │
-  │ Config: /color /sound  Data: /save /load /wipe  │
-  └─────────────────────── Type /help for details ──┘
-""")
+        """Show compact command reference on startup - now included in banner"""
+        pass  # Included in _get_banner_lines now
 
     def _help(self):
         """Show full command help"""
@@ -3305,6 +4678,11 @@ class PingNostrCLI:
   CHAT
     /dm <user> <msg>      Direct message to peer
     /name <username>      Change display name
+    /roll                 Roll two dice 🎲
+    /challenge <user>     Challenge to dice duel ⚔️
+    /accept               Accept a dice challenge
+    /decline              Decline a dice challenge
+    /sticker [num|name]   Send ASCII art sticker 🎨
 
   VIEW
     /info                 Show session info
@@ -3314,12 +4692,20 @@ class PingNostrCLI:
   CONFIG
     /color [theme|bg fg]  Set colors (/color themes)
     /sound [on|off|test]  Toggle sound notifications
-    /fixedinput [on|off]  Toggle fixed input line
+    /fixedinput [on|off]  Fixed input line (experimental)
 
   SESSION
     /printsession         Show encryption keys
-    /save                 Export to pingconfig.json
+    /save [withhistory]   Export to pingconfig.json
     /load                 Import from pingconfig.json
+
+  SHORTCUTS (curses mode)
+    Ctrl+F  Toggle side panel
+    Ctrl+T  Cycle themes
+    
+  NAVIGATION
+    PgUp/PgDn  Scroll chat
+    ↑/↓        Command history
 
   MISC
     /update [apply]       Check/install updates
@@ -3332,12 +4718,165 @@ class PingNostrCLI:
 """)
     
     async def run(self):
+        """Main run loop with curses UI"""
+        global CURSES_UI, CURSES_MODE
+        
+        # Try to use curses
+        use_curses = CURSES_MODE
+        if use_curses:
+            try:
+                import curses
+                
+                # Initialize curses for login window
+                stdscr = curses.initscr()
+                curses.noecho()
+                curses.cbreak()
+                stdscr.keypad(True)
+                
+                try:
+                    curses.start_color()
+                    curses.use_default_colors()
+                except:
+                    pass
+                
+                # Show login window
+                login = LoginWindow(
+                    stdscr,
+                    default_username=self.username,
+                    default_room=self.initial_room or "",
+                    default_password=self.initial_password or ""
+                )
+                result = login.run()
+                
+                if result is None:
+                    # User cancelled
+                    curses.nocbreak()
+                    stdscr.keypad(False)
+                    curses.echo()
+                    curses.endwin()
+                    print("\nCancelled.")
+                    return
+                
+                # Update from login
+                username, room, password = result
+                self.username = username
+                self.initial_room = room if room else None
+                self.initial_password = password if password else None
+                
+                # Now create the main UI
+                curses.endwin()  # Clean up login screen
+                
+                CURSES_UI = CursesUI()
+                CURSES_UI.start()
+                
+            except Exception as e:
+                use_curses = False
+                CURSES_UI = None
+                try:
+                    import curses
+                    curses.endwin()
+                except:
+                    pass
+                print(f"  Note: Curses unavailable ({e}), using classic mode")
+        
+        if use_curses and CURSES_UI:
+            await self._run_curses()
+        else:
+            await self._run_classic()
+    
+    async def _run_curses(self):
+        """Run with curses UI"""
+        global CURSES_UI, CURRENT_THEME, CURRENT_BG, CURRENT_FG
+        
+        self.running = True
+        ui = CURSES_UI
+        
+        # Set up completer for tab completion
+        ui.completer = self._curses_completer
+        
+        # Set up shortcut callback for theme cycling
+        ui.on_cycle_theme = lambda: self._cycle_theme()
+        
+        # Apply theme/colors if set (from --color flag or config)
+        if CURRENT_THEME:
+            ui.apply_theme(CURRENT_THEME)
+        elif CURRENT_BG or CURRENT_FG:
+            ui.apply_colors(CURRENT_BG, CURRENT_FG)
+        
+        # Load history from file if exists
+        history_file = DATA_DIR / "history"
+        if history_file.exists():
+            try:
+                with open(history_file, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            ui.input_history.append(line)
+            except:
+                pass
+        
+        # Show full banner in message area (same as classic mode)
+        for line in self._get_banner_lines():
+            ui.add_message(line)
+        
+        # Update status bar
+        self._update_status()
+        
+        if self.initial_room:
+            await self._join(self.initial_room, self.initial_password)
+        
+        # Run input loop in executor to not block async
+        loop = asyncio.get_event_loop()
+        
+        while self.running and ui.running:
+            try:
+                # Update prompt
+                self._update_prompt()
+                
+                # Get input character (blocking, in executor)
+                ch = await loop.run_in_executor(None, ui.get_input_char)
+                
+                if ch == -1:
+                    continue
+                    
+                # Handle the key
+                line = ui.handle_key(ch)
+                
+                if line is not None:
+                    # Got a complete line
+                    if line:
+                        await self._handle(line.strip())
+                        
+            except (EOFError, KeyboardInterrupt):
+                break
+            except Exception as e:
+                if DEBUG:
+                    ui.add_message(f"  [debug] Error: {e}")
+        
+        # Save history before exit
+        try:
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            with open(history_file, 'w') as f:
+                # Save last 1000 entries
+                for line in ui.input_history[-1000:]:
+                    f.write(line + '\n')
+        except:
+            pass
+        
+        # Cleanup
+        if ui:
+            ui.stop()
+        CURSES_UI = None
+        
+        print("\nGoodbye! 🏓\n")
+        self._save_history()
+        await self._cleanup()
+    
+    async def _run_classic(self):
+        """Run with classic terminal UI (no curses)"""
         self._banner()
         self._quick_help()
         self.running = True
-        
-        # Setup terminal scroll region for fixed input line
-        setup_scroll_region()
         
         if self.initial_room:
             await self._join(self.initial_room, self.initial_password)
@@ -3351,8 +4890,6 @@ class PingNostrCLI:
                 else:
                     prompt = "> "
                 
-                # Move to input line before getting input
-                move_to_input_line()
                 line = await asyncio.get_event_loop().run_in_executor(None, lambda: input(prompt))
                 if line:
                     await self._handle(line.strip())
@@ -3360,16 +4897,88 @@ class PingNostrCLI:
                 print("\nGoodbye!")
                 break
         
-        # Reset scroll region before exit
-        reset_scroll_region()
-        
-        # Clear screen and move cursor to top for clean exit
-        print("\033[2J\033[H", end='', flush=True)
         print("Goodbye! 🏓\n")
-        
-        # Save command history
         self._save_history()
         await self._cleanup()
+    
+    def _update_prompt(self):
+        """Update the curses UI prompt"""
+        global CURSES_UI
+        if not CURSES_UI:
+            return
+        if self.current_room:
+            lock = "🔒" if self.current_password else ""
+            prompt = f"[{self.current_room}]{lock} > "
+        else:
+            prompt = "> "
+        CURSES_UI.set_prompt(prompt)
+    
+    def _update_status(self):
+        """Update the curses UI status bar and right panel"""
+        global CURSES_UI
+        if not CURSES_UI:
+            return
+        
+        peers_count = len(self.client.peers) if self.client else 0
+        keys_count = sum(1 for p in self.client.peers.values() if p.encryption_pubkey) if self.client else 0
+        room = self.current_room or "No room"
+        
+        # Update status bar with shortcuts hint
+        # Show room/peers on left, shortcuts on right
+        left = f" 🏓 {room}"
+        if self.current_password:
+            left += " 🔒"
+        left += f" | {peers_count} peers ({keys_count} 🔑)"
+        
+        shortcuts = "^F:Panel ^T:Theme"
+        
+        CURSES_UI.set_status(left, shortcuts)
+        
+        # Update connection info in panel
+        relays_connected = len([r for r in self.client.relays if r.connected]) if self.client else 0
+        relays_total = len(NOSTR_RELAYS)
+        CURSES_UI.update_connection_info(
+            room=self.current_room or "",
+            password=self.current_password or "",
+            relays_connected=relays_connected,
+            relays_total=relays_total,
+            username=self.username,
+            ping_id=self.identity.id
+        )
+        
+        # Update peers list in panel
+        peers_list = []
+        if self.client:
+            for pk, peer in self.client.peers.items():
+                peers_list.append({
+                    "username": peer.username or "???",
+                    "fingerprint": peer.identity[:8] if peer.identity else pk[:8],
+                    "has_key": bool(peer.encryption_pubkey)
+                })
+        CURSES_UI.update_peers(peers_list)
+    
+    def _cycle_theme(self):
+        """Cycle through color themes (for Ctrl+T shortcut)"""
+        global CURSES_UI, CURRENT_THEME
+        
+        theme_list = list(THEMES.keys())
+        
+        if CURRENT_THEME and CURRENT_THEME in theme_list:
+            idx = theme_list.index(CURRENT_THEME)
+            next_idx = (idx + 1) % len(theme_list)
+        else:
+            next_idx = 0
+        
+        next_theme = theme_list[next_idx]
+        
+        if CURSES_UI:
+            if CURSES_UI.apply_theme(next_theme):
+                CURRENT_THEME = next_theme
+                bg, fg = THEMES[next_theme]
+                if bg and fg:
+                    CURSES_UI.add_message(f"  ✓ Theme: {next_theme} (bg={bg}, fg={fg})")
+                else:
+                    CURSES_UI.add_message(f"  ✓ Theme: {next_theme} (default)")
     
     async def _handle(self, line: str):
         if line.startswith('/'):
@@ -3393,11 +5002,15 @@ class PingNostrCLI:
                 await self._reconnect()
             elif cmd in ('name', 'n'):
                 if args:
+                    old_name = self.username
                     self.username = args
                     self.storage.save_username(args)
                     if self.client:
                         self.client.username = args
-                    self._print(f"  Name: {args}")
+                        # Re-announce presence with new name to update peers
+                        await self._announce_name_change(old_name, args)
+                    self._print(f"  Name changed: {old_name} → {args}")
+                    self._update_status()
                 else:
                     self._print("  Usage: /name <username>")
             elif cmd == 'relays':
@@ -3413,7 +5026,7 @@ class PingNostrCLI:
             elif cmd == 'fixedinput':
                 self._toggle_fixed_input(args)
             elif cmd == 'save':
-                self._save()
+                self._save(args)
             elif cmd == 'load':
                 self._load()
             elif cmd == 'printsession':
@@ -3424,6 +5037,16 @@ class PingNostrCLI:
                 await self._update(args)
             elif cmd == 'wipe':
                 await self._wipe()
+            elif cmd == 'roll':
+                await self._roll()
+            elif cmd == 'challenge':
+                await self._challenge(args)
+            elif cmd == 'accept':
+                await self._accept()
+            elif cmd == 'decline':
+                await self._decline()
+            elif cmd in ('sticker', 'stickers', 's'):
+                await self._sticker(args)
             elif cmd == 'help':
                 self._help()
             else:
@@ -3471,6 +5094,7 @@ class PingNostrCLI:
             lock = " 🔒" if password else ""
             self._print(f"\n  ✓ Joined: {room}{lock} ({connected} relays)")
             self._print(f"  Waiting for peers...\n")
+            self._update_status()  # Update status bar
         else:
             self._print(f"  ✗ Failed to connect to any relay")
             self.client = None
@@ -3486,6 +5110,112 @@ class PingNostrCLI:
             self.client = None
         self.current_room = None
         self.current_password = None
+        self._update_status()  # Update status bar
+    
+    async def _announce_name_change(self, old_name: str, new_name: str):
+        """Announce name change to the room"""
+        if not self.client or not self.current_room:
+            return
+        
+        # Send a message announcing the name change
+        change_msg = f"✏️ {old_name} is now known as {new_name}"
+        await self.client.send_message(change_msg)
+        
+        # Re-send key exchange so peers update their records
+        await self.client._send_key_exchange()
+        
+        # Display the message
+        t = time.strftime("%H:%M")
+        fingerprint = self.identity.id[:8]
+        ui_print(f"  [{t}] {new_name} [{fingerprint}]: {change_msg}")
+    
+    def _parse_mentions(self, text: str) -> tuple[str, list[dict]]:
+        """Parse @mentions in text and expand username[fingerprint] format
+        
+        Returns:
+            (processed_text, list of mentioned peers with {username, fingerprint})
+        """
+        import re
+        
+        if not self.client or '@' not in text:
+            return text, []
+        
+        mentioned = []
+        
+        # Build lookup of peers
+        peers_by_username = {}  # username.lower() -> [(peer, fingerprint), ...]
+        peers_by_fingerprint = {}  # fingerprint.lower() -> (peer, username)
+        
+        for pk, peer in self.client.peers.items():
+            if not peer.username:
+                continue
+            fingerprint = peer.identity[:8] if peer.identity else pk[:8]
+            
+            username_lower = peer.username.lower()
+            if username_lower not in peers_by_username:
+                peers_by_username[username_lower] = []
+            peers_by_username[username_lower].append((peer, fingerprint))
+            
+            peers_by_fingerprint[fingerprint.lower()] = (peer, peer.username)
+        
+        # Pattern for @username or @username[fingerprint]
+        pattern = r'@(\w+)(?:\[([a-fA-F0-9]+)\])?'
+        
+        def replace_mention(match):
+            username = match.group(1)
+            fingerprint_hint = match.group(2)
+            username_lower = username.lower()
+            
+            # If fingerprint is provided, use it for exact match
+            if fingerprint_hint:
+                fp_lower = fingerprint_hint.lower()
+                if fp_lower in peers_by_fingerprint:
+                    peer, real_username = peers_by_fingerprint[fp_lower]
+                    mentioned.append({
+                        'username': real_username,
+                        'fingerprint': fingerprint_hint
+                    })
+                    # Keep the format for display
+                    return f"@{real_username}[{fingerprint_hint}]"
+                # Fingerprint not found, keep as-is
+                return match.group(0)
+            
+            # No fingerprint - try username match
+            if username_lower in peers_by_username:
+                matches = peers_by_username[username_lower]
+                if len(matches) == 1:
+                    # Unique username - expand it
+                    peer, fingerprint = matches[0]
+                    mentioned.append({
+                        'username': peer.username,
+                        'fingerprint': fingerprint
+                    })
+                    return f"@{peer.username}"
+                else:
+                    # Multiple matches - keep as-is, user should disambiguate
+                    # But still add all to mentioned list
+                    for peer, fingerprint in matches:
+                        mentioned.append({
+                            'username': peer.username,
+                            'fingerprint': fingerprint
+                        })
+                    return match.group(0)
+            
+            # Also try matching by fingerprint directly (@abc12345)
+            if username_lower in peers_by_fingerprint:
+                peer, real_username = peers_by_fingerprint[username_lower]
+                fingerprint = username_lower
+                mentioned.append({
+                    'username': real_username,
+                    'fingerprint': fingerprint
+                })
+                return f"@{real_username}[{fingerprint}]"
+            
+            # No match found, keep as-is
+            return match.group(0)
+        
+        processed_text = re.sub(pattern, replace_mention, text)
+        return processed_text, mentioned
     
     async def _send(self, text: str):
         if not self.client:
@@ -3496,66 +5226,87 @@ class PingNostrCLI:
             self._print("  No peers with keys yet")
             return
         
+        # Parse @mentions
+        processed_text, mentions = self._parse_mentions(text)
+        
+        # Warn about ambiguous mentions
+        if '@' in text and self.client:
+            import re
+            for match in re.finditer(r'@(\w+)(?!\[)', text):
+                username = match.group(1).lower()
+                # Check for duplicates
+                count = sum(1 for pk, p in self.client.peers.items() 
+                           if p.username and p.username.lower() == username)
+                if count > 1:
+                    self._print(f"  ⚠️  Multiple users named '{match.group(1)}' - use @username[fingerprint]")
+        
         # Save own message
         msg = Message(
             id=gen_msg_id(),
             room=self.current_room or '',
             sender_id=self.identity.id,
             sender_name=self.username,
-            content=text,
+            content=processed_text,
             timestamp=time.time() * 1000
         )
         self.storage.save_message(msg)
         
-        # Send
-        await self.client.send_message(text)
+        # Send the processed text
+        await self.client.send_message(processed_text)
         
-        # Display with own fingerprint using print_above_input
+        # Display with own fingerprint
         t = time.strftime("%H:%M", time.localtime(msg.timestamp / 1000))
         fingerprint = self.identity.id[:8]
-        
-        # Build prompt
-        if self.current_room:
-            lock = "🔒" if self.current_password else ""
-            prompt = f"[{self.current_room}]{lock} > "
-        else:
-            prompt = "> "
-        
-        print_above_input(f"  [{t}] {self.username} [{fingerprint}]: {text}", prompt)
+        ui_print(f"  [{t}] {self.username} [{fingerprint}]: {processed_text}")
     
     async def _dm(self, args: str):
-        """Send a direct message"""
+        """Send a direct message
+        
+        Usage: /dm <target> <message>
+        
+        Target can be:
+          - Username (e.g., alice)
+          - Fingerprint (e.g., abc12345)
+          - Ping ID (full or partial)
+        
+        Use fingerprint to disambiguate when multiple users have the same name.
+        """
         if not self.client:
             self._print("  Not connected")
             return
         
         parts = args.split(maxsplit=1)
         if len(parts) < 2:
-            self._print("  Usage: /dm <username> <message>")
+            self._print("  Usage: /dm <target> <message>")
+            self._print("  Target: username or fingerprint (e.g., abc12345)")
             return
         
-        target_username, message = parts
+        target, message = parts
         
-        # Find target peer to get their fingerprint
-        target_fingerprint = "?"
-        for pk, peer in self.client.peers.items():
-            if peer.username.lower() == target_username.lower():
-                target_fingerprint = peer.identity[:8] if peer.identity else pk[:8]
-                break
+        success, username, fingerprint = await self.client.send_dm(target, message)
         
-        if await self.client.send_dm(target_username, message):
+        if success:
             t = time.strftime("%H:%M")
-            
-            # Build prompt
-            if self.current_room:
-                lock = "🔒" if self.current_password else ""
-                prompt = f"[{self.current_room}]{lock} > "
-            else:
-                prompt = "> "
-            
-            print_above_input(f"  [{t}] 📤 DM to {target_username} [{target_fingerprint}]: {message}", prompt)
+            ui_print(f"  [{t}] 📤 DM to {username} [{fingerprint}]: {message}")
         else:
-            self._print(f"  ✗ Peer '{target_username}' not found or no key")
+            # Check if there are multiple peers with that username
+            if self.client:
+                matches = []
+                target_lower = target.lower()
+                for pk, peer in self.client.peers.items():
+                    if peer.username.lower() == target_lower:
+                        fp = peer.identity[:8] if peer.identity else pk[:8]
+                        has_key = "🔑" if peer.encryption_pubkey else "⏳"
+                        matches.append(f"    {has_key} {peer.username} [{fp}]")
+                
+                if len(matches) > 1:
+                    self._print(f"  ✗ Multiple peers named '{target}':")
+                    for m in matches:
+                        self._print(m)
+                    self._print(f"  Use fingerprint: /dm <fingerprint> <message>")
+                    return
+            
+            self._print(f"  ✗ Peer '{target}' not found or no key")
     
     async def _reconnect(self):
         """Reconnect to relays"""
@@ -3589,15 +5340,12 @@ class PingNostrCLI:
         
         t = time.strftime("%H:%M", time.localtime(ts / 1000))
         
-        # Build prompt
-        if self.current_room:
-            lock = "🔒" if self.current_password else ""
-            prompt = f"[{self.current_room}]{lock} > "
-        else:
-            prompt = "> "
+        # Print message
+        ui_print(f"  [{t}] {sender} [{fingerprint}]: {text}")
         
-        # Print message above input line
-        print_above_input(f"  [{t}] {sender} [{fingerprint}]: {text}", prompt)
+        # Check for challenge-related messages (if not from ourselves)
+        if sender.lower() != self.username.lower():
+            self._handle_challenge_message(sender, fingerprint, text)
         
         # Sound notification - check for mention first
         if self.username.lower() in text.lower():
@@ -3606,13 +5354,13 @@ class PingNostrCLI:
             beep_message()
     
     def _on_peer_join(self, nostr_pk: str):
-        prompt = f"[{self.current_room}] > " if self.current_room else "> "
-        print_above_input(f"  + Peer: {nostr_pk[:16]}...", prompt)
+        ui_print(f"  + Peer: {nostr_pk[:16]}...")
+        self._update_status()
     
     def _on_key_exchange(self, nostr_pk: str, username: str, ping_id: str):
         fingerprint = ping_id[:8] if ping_id else nostr_pk[:8]
-        prompt = f"[{self.current_room}] > " if self.current_room else "> "
-        print_above_input(f"  🔑 {username} [{fingerprint}]", prompt)
+        ui_print(f"  🔑 {username} [{fingerprint}]")
+        self._update_status()
     
     def _on_leave(self, nostr_pk: str, username: str):
         # Get fingerprint
@@ -3621,12 +5369,8 @@ class PingNostrCLI:
             peer = self.client.peers[nostr_pk]
             fingerprint = peer.identity[:8] if peer.identity else nostr_pk[:8]
         
-        if self.current_room:
-            lock = "🔒" if self.current_password else ""
-            prompt = f"[{self.current_room}]{lock} > "
-        else:
-            prompt = "> "
-        print_above_input(f"  ← {username} [{fingerprint}] left", prompt)
+        ui_print(f"  ← {username} [{fingerprint}] left")
+        self._update_status()
     
     def _on_dm(self, sender_pk: str, sender: str, text: str, ts: float, msg_id: str):
         # Get fingerprint from peer
@@ -3637,14 +5381,7 @@ class PingNostrCLI:
         
         t = time.strftime("%H:%M", time.localtime(ts / 1000))
         
-        # Build prompt
-        if self.current_room:
-            lock = "🔒" if self.current_password else ""
-            prompt = f"[{self.current_room}]{lock} > "
-        else:
-            prompt = "> "
-        
-        print_above_input(f"  [{t}] 📩 DM from {sender} [{fingerprint}]: {text}", prompt)
+        ui_print(f"  [{t}] 📩 DM from {sender} [{fingerprint}]: {text}")
         
         # Sound notification for DM (double beep)
         beep_dm()
@@ -3753,16 +5490,576 @@ class PingNostrCLI:
     
     def _clear(self):
         """Clear the terminal screen"""
+        global CURSES_UI
+        if CURSES_UI and CURSES_UI.running:
+            # Curses mode - clear message buffer
+            CURSES_UI.clear_messages()
+            CURSES_UI.add_message("  🏓 Ping - Screen cleared")
+            if self.current_room:
+                CURSES_UI.add_message(f"  Room: {self.current_room}")
+        else:
+            # Classic mode
+            import os
+            os.system('cls' if os.name == 'nt' else 'clear')
+            self._banner()
+            if self.current_room:
+                print(f"  Room: {self.current_room}\n")
+    
+    async def _roll(self, broadcast: bool = True, for_challenge: bool = False) -> tuple[int, int, int]:
+        """Roll two dice and display them in ASCII art
+        
+        Args:
+            broadcast: Whether to send to room
+            for_challenge: Whether this is part of a challenge (changes message format)
+        
+        Returns: (die1, die2, total)
+        """
+        import random
+        
+        # Roll two dice
+        die1 = random.randint(1, 6)
+        die2 = random.randint(1, 6)
+        total = die1 + die2
+        
+        # Build side-by-side ASCII art
+        art1 = self._get_die_art(die1)
+        art2 = self._get_die_art(die2)
+        
+        # Display locally
+        self._print(f"\n  🎲 Rolling dice...")
+        for i in range(5):
+            self._print(f"  {art1[i]}  {art2[i]}")
+        self._print(f"  Total: {die1} + {die2} = {total}\n")
+        
+        # If in a room and broadcast enabled, send the roll with ASCII art
+        if broadcast and self.client and self.current_room:
+            t = time.strftime("%H:%M")
+            fingerprint = self.identity.id[:8]
+            
+            if for_challenge:
+                # Challenge roll - special format
+                prefix = f"🎲⚔️ DUEL ROLL"
+            else:
+                # Regular roll
+                prefix = f"🎲 rolled"
+            
+            # Build multi-line message with dice art
+            dice_lines = [
+                f"{prefix}:",
+                f"{art1[0]}  {art2[0]}",
+                f"{art1[1]}  {art2[1]}",
+                f"{art1[2]}  {art2[2]}",
+                f"{art1[3]}  {art2[3]}",
+                f"{art1[4]}  {art2[4]}",
+                f"Total: [{die1}] + [{die2}] = {total}"
+            ]
+            
+            roll_msg = "\n".join(dice_lines)
+            await self.client.send_message(roll_msg)
+            
+            # Display as sent message (just the summary line)
+            ui_print(f"  [{t}] {self.username} [{fingerprint}]: {prefix}: [{die1}] [{die2}] = {total}")
+        
+        return die1, die2, total
+    
+    def _get_die_art(self, value: int) -> list[str]:
+        """Get ASCII art for a single die face"""
+        dice_art = {
+            1: [
+                "┌───────┐",
+                "│       │",
+                "│   ●   │",
+                "│       │",
+                "└───────┘"
+            ],
+            2: [
+                "┌───────┐",
+                "│ ●     │",
+                "│       │",
+                "│     ● │",
+                "└───────┘"
+            ],
+            3: [
+                "┌───────┐",
+                "│ ●     │",
+                "│   ●   │",
+                "│     ● │",
+                "└───────┘"
+            ],
+            4: [
+                "┌───────┐",
+                "│ ●   ● │",
+                "│       │",
+                "│ ●   ● │",
+                "└───────┘"
+            ],
+            5: [
+                "┌───────┐",
+                "│ ●   ● │",
+                "│   ●   │",
+                "│ ●   ● │",
+                "└───────┘"
+            ],
+            6: [
+                "┌───────┐",
+                "│ ●   ● │",
+                "│ ●   ● │",
+                "│ ●   ● │",
+                "└───────┘"
+            ]
+        }
+        return dice_art.get(value, dice_art[1])
+    
+    def _load_stickers(self) -> list[dict]:
+        """Load stickers from pingstickers.json
+        
+        Returns list of stickers: [{name, art}, ...]
+        """
+        import sys
         import os
-        os.system('cls' if os.name == 'nt' else 'clear')
-        self._banner()
-        if self.current_room:
-            self._print(f"  Room: {self.current_room}\n")
-        # Re-setup scroll region after clear
-        setup_scroll_region()
+        
+        # Get directory where ping.py is located
+        try:
+            script_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+        except:
+            script_dir = Path.cwd()
+        
+        # Also try to get from sys.argv[0] as fallback
+        try:
+            argv_dir = Path(os.path.dirname(os.path.abspath(sys.argv[0])))
+        except:
+            argv_dir = Path.cwd()
+        
+        sticker_paths = [
+            script_dir / "pingstickers.json",            # Same directory as ping.py
+            argv_dir / "pingstickers.json",              # Directory from argv[0]
+            Path.cwd() / "pingstickers.json",            # Current working directory
+            Path.home() / ".ping" / "pingstickers.json", # ~/.ping/
+            Path.home() / "pingstickers.json",           # Home directory
+            DATA_DIR / "pingstickers.json",              # Data directory
+        ]
+        
+        for path in sticker_paths:
+            try:
+                path = path.resolve()
+                if path.exists():
+                    with open(path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        stickers = data.get("stickers", [])
+                        if stickers:
+                            return stickers
+            except Exception as e:
+                if DEBUG:
+                    print(f"    [debug] Failed to load stickers from {path}: {e}")
+        
+        return []
+    
+    async def _sticker(self, args: str):
+        """Send or list stickers
+        
+        Usage:
+            /sticker          - List available stickers
+            /sticker <number> - Send sticker by number
+            /sticker <name>   - Send sticker by name
+        """
+        stickers = self._load_stickers()
+        
+        if not stickers:
+            self._print("  No stickers found!")
+            self._print("  Create pingstickers.json with your stickers.")
+            self._print("  Locations checked:")
+            self._print("    • ./pingstickers.json (current directory)")
+            self._print("    • ~/.ping/pingstickers.json")
+            self._print("    • ~/pingstickers.json")
+            return
+        
+        args = args.strip()
+        
+        # No args - show sticker list horizontally
+        if not args:
+            self._print("\n  🎨 STICKERS")
+            self._print("  " + "═" * 60)
+            
+            # Display stickers in rows of 3
+            stickers_per_row = 3
+            sticker_width = 18  # Width allocated per sticker
+            
+            for row_start in range(0, len(stickers), stickers_per_row):
+                row_stickers = stickers[row_start:row_start + stickers_per_row]
+                
+                # Get max height for this row
+                max_height = max(len(s.get("art", [""])) for s in row_stickers)
+                
+                # Print header row with numbers and names
+                header = "  "
+                for i, sticker in enumerate(row_stickers):
+                    num = row_start + i + 1
+                    name = sticker.get("name", f"sticker_{num}")[:15]
+                    header += f" {num:2}. {name:15}"
+                self._print(header)
+                
+                # Print each line of art side by side
+                for line_idx in range(max_height):
+                    line = "  "
+                    for sticker in row_stickers:
+                        art = sticker.get("art", [])
+                        if line_idx < len(art):
+                            art_line = art[line_idx][:sticker_width]
+                            line += f" {art_line:{sticker_width}} "
+                        else:
+                            line += f" {'':{sticker_width}} "
+                    self._print(line)
+                
+                # Blank line between rows
+                self._print("")
+            
+            self._print("  " + "═" * 60)
+            self._print(f"  Usage: /sticker <number> or /sticker <n>")
+            self._print(f"  Total: {len(stickers)} stickers\n")
+            return
+        
+        # Find sticker by number or name
+        sticker = None
+        
+        # Try as number
+        try:
+            num = int(args)
+            if 1 <= num <= len(stickers):
+                sticker = stickers[num - 1]
+        except ValueError:
+            # Try as name
+            args_lower = args.lower()
+            for s in stickers:
+                if s.get("name", "").lower() == args_lower:
+                    sticker = s
+                    break
+        
+        if not sticker:
+            self._print(f"  ✗ Sticker '{args}' not found")
+            self._print(f"  Use /sticker to see available stickers")
+            return
+        
+        # Send sticker
+        if not self.client or not self.current_room:
+            # Just display locally if not in room
+            self._print(f"\n  🎨 {sticker.get('name', 'Sticker')}:")
+            for line in sticker.get("art", []):
+                self._print(f"  {line}")
+            self._print("")
+            return
+        
+        # Build sticker message
+        name = sticker.get("name", "sticker")
+        art_lines = sticker.get("art", [])
+        
+        sticker_msg = f"🎨 [{name}]\n" + "\n".join(art_lines)
+        
+        await self.client.send_message(sticker_msg)
+        
+        # Display locally
+        t = time.strftime("%H:%M")
+        fingerprint = self.identity.id[:8]
+        ui_print(f"  [{t}] {self.username} [{fingerprint}]: 🎨 [{name}]")
+        for line in art_lines:
+            ui_print(f"  {line}")
+    
+    async def _challenge(self, args: str):
+        """Challenge someone to a dice roll
+        
+        Usage: /challenge <username or fingerprint>
+        """
+        if not self.client or not self.current_room:
+            self._print("  Join a room first")
+            return
+        
+        if not args:
+            self._print("  Usage: /challenge <username or fingerprint>")
+            return
+        
+        target = args.strip()
+        
+        # Find the target peer
+        target_peer = None
+        target_pk = None
+        target_lower = target.lower()
+        
+        # Check for username[fingerprint] format
+        import re
+        match = re.match(r'^(.+?)\[([a-fA-F0-9]+)\]$', target)
+        if match:
+            username_hint = match.group(1).lower()
+            fingerprint_hint = match.group(2).lower()
+            for pk, peer in self.client.peers.items():
+                if not peer.encryption_pubkey:
+                    continue
+                fp = peer.identity[:8] if peer.identity else pk[:8]
+                if peer.username.lower() == username_hint and fp.lower() == fingerprint_hint:
+                    target_peer = peer
+                    target_pk = pk
+                    break
+        else:
+            # Try username or fingerprint match
+            matches = []
+            for pk, peer in self.client.peers.items():
+                if not peer.encryption_pubkey:
+                    continue
+                fp = peer.identity[:8] if peer.identity else pk[:8]
+                if peer.username.lower() == target_lower:
+                    matches.append((pk, peer, fp))
+                elif fp.lower() == target_lower or fp.lower().startswith(target_lower):
+                    matches.append((pk, peer, fp))
+            
+            if len(matches) == 1:
+                target_pk, target_peer, _ = matches[0]
+            elif len(matches) > 1:
+                self._print(f"  ✗ Multiple peers match '{target}':")
+                for pk, peer, fp in matches:
+                    self._print(f"    • {peer.username} [{fp}]")
+                self._print(f"  Use: /challenge username[fingerprint]")
+                return
+        
+        if not target_peer:
+            self._print(f"  ✗ Peer '{target}' not found or no key")
+            return
+        
+        target_fp = target_peer.identity[:8] if target_peer.identity else target_pk[:8]
+        
+        # Store outgoing challenge
+        self.outgoing_challenge = {
+            "target": target_peer.username,
+            "target_fp": target_fp,
+            "target_pk": target_pk,
+            "timestamp": time.time()
+        }
+        
+        # Send challenge message
+        challenge_msg = f"🎲 ⚔️ CHALLENGE: {self.username} challenges {target_peer.username} [{target_fp}] to a dice duel! Type /accept to accept!"
+        await self.client.send_message(challenge_msg)
+        
+        t = time.strftime("%H:%M")
+        fingerprint = self.identity.id[:8]
+        ui_print(f"  [{t}] {self.username} [{fingerprint}]: {challenge_msg}")
+        self._print(f"  ⏳ Waiting for {target_peer.username} to accept...")
+    
+    async def _accept(self):
+        """Accept a dice challenge"""
+        if not self.pending_challenge:
+            self._print("  No pending challenge to accept")
+            return
+        
+        if not self.client or not self.current_room:
+            self._print("  Not in a room")
+            return
+        
+        challenger = self.pending_challenge["challenger"]
+        challenger_fp = self.pending_challenge["challenger_fp"]
+        
+        # Check if challenge is still valid (within 60 seconds)
+        if time.time() - self.pending_challenge["timestamp"] > 60:
+            self._print("  ✗ Challenge expired")
+            self.pending_challenge = None
+            return
+        
+        # Set up active challenge
+        self.active_challenge = {
+            "opponent": challenger,
+            "opponent_fp": challenger_fp,
+            "my_roll": None,
+            "opponent_roll": None,
+            "i_am_challenger": False  # Track who initiated
+        }
+        
+        # Clear pending
+        self.pending_challenge = None
+        
+        # Send acceptance
+        accept_msg = f"🎲 ✓ {self.username} accepts the challenge from {challenger}! Let's roll!"
+        await self.client.send_message(accept_msg)
+        
+        t = time.strftime("%H:%M")
+        fingerprint = self.identity.id[:8]
+        ui_print(f"  [{t}] {self.username} [{fingerprint}]: {accept_msg}")
+        
+        # Do our roll with ASCII art broadcast
+        die1, die2, total = await self._roll(broadcast=True, for_challenge=True)
+        self.active_challenge["my_roll"] = total
+        self.active_challenge["my_dice"] = (die1, die2)
+        
+        self._print(f"  ⏳ Waiting for {challenger}'s roll...")
+    
+    async def _decline(self):
+        """Decline a dice challenge"""
+        if not self.pending_challenge:
+            self._print("  No pending challenge to decline")
+            return
+        
+        if not self.client or not self.current_room:
+            self.pending_challenge = None
+            return
+        
+        challenger = self.pending_challenge["challenger"]
+        self.pending_challenge = None
+        
+        decline_msg = f"🎲 ✗ {self.username} declined the challenge from {challenger}"
+        await self.client.send_message(decline_msg)
+        
+        t = time.strftime("%H:%M")
+        fingerprint = self.identity.id[:8]
+        ui_print(f"  [{t}] {self.username} [{fingerprint}]: {decline_msg}")
+    
+    def _handle_challenge_message(self, sender: str, sender_fp: str, text: str):
+        """Check if a message is challenge-related and handle it"""
+        import re
+        
+        # Check for challenge
+        challenge_match = re.search(r'🎲 ⚔️ CHALLENGE: (\S+) challenges (\S+) \[([a-fA-F0-9]+)\]', text)
+        if challenge_match:
+            challenger = challenge_match.group(1)
+            target = challenge_match.group(2)
+            target_fp = challenge_match.group(3)
+            
+            # Check if we're the target
+            if target.lower() == self.username.lower() and target_fp.lower() == self.identity.id[:8].lower():
+                self.pending_challenge = {
+                    "challenger": challenger,
+                    "challenger_fp": sender_fp,
+                    "timestamp": time.time()
+                }
+                self._print(f"\n  ╔════════════════════════════════════════╗")
+                self._print(f"  ║  🎲 {challenger} challenged you to dice!  ║")
+                self._print(f"  ║  Type /accept or /decline               ║")
+                self._print(f"  ╚════════════════════════════════════════╝\n")
+                beep_mention()
+            return True
+        
+        # Check for acceptance
+        accept_match = re.search(r'🎲 ✓ (\S+) accepts the challenge from (\S+)', text)
+        if accept_match:
+            accepter = accept_match.group(1)
+            challenger = accept_match.group(2)
+            
+            # Check if our challenge was accepted
+            if self.outgoing_challenge and challenger.lower() == self.username.lower():
+                if accepter.lower() == self.outgoing_challenge["target"].lower():
+                    self.active_challenge = {
+                        "opponent": accepter,
+                        "opponent_fp": self.outgoing_challenge["target_fp"],
+                        "my_roll": None,
+                        "opponent_roll": None
+                    }
+                    self.outgoing_challenge = None
+                    self._print(f"\n  🎲 {accepter} accepted! Rolling dice...")
+                    # We need to roll - but this is sync context, schedule it
+                    import asyncio
+                    asyncio.create_task(self._do_challenge_roll())
+            return True
+        
+        # Check for duel roll - matches the new multi-line format with "Total: [x] + [y] = z"
+        duel_match = re.search(r'🎲⚔️ DUEL ROLL:', text)
+        total_match = re.search(r'Total: \[(\d)\] \+ \[(\d)\] = (\d+)', text)
+        if duel_match and total_match:
+            die1 = int(total_match.group(1))
+            die2 = int(total_match.group(2))
+            total = int(total_match.group(3))
+            
+            if self.active_challenge:
+                opponent = self.active_challenge["opponent"]
+                if sender.lower() == opponent.lower():
+                    self.active_challenge["opponent_roll"] = total
+                    self.active_challenge["opponent_dice"] = (die1, die2)
+                    
+                    # Check if both rolls are in
+                    if self.active_challenge["my_roll"] is not None:
+                        import asyncio
+                        asyncio.create_task(self._determine_winner())
+            return True
+        
+        # Check for decline
+        if '🎲 ✗' in text and 'declined' in text:
+            if self.outgoing_challenge:
+                target = self.outgoing_challenge["target"]
+                if target.lower() in text.lower():
+                    self._print(f"\n  😔 {target} declined your challenge")
+                    self.outgoing_challenge = None
+            return True
+        
+        return False
+    
+    async def _do_challenge_roll(self):
+        """Perform a challenge roll (called when opponent accepts)"""
+        if not self.active_challenge:
+            return
+        
+        # Do our roll with ASCII art broadcast
+        die1, die2, total = await self._roll(broadcast=True, for_challenge=True)
+        self.active_challenge["my_roll"] = total
+        self.active_challenge["my_dice"] = (die1, die2)
+        self.active_challenge["i_am_challenger"] = True
+        
+        # Check if opponent already rolled
+        if self.active_challenge["opponent_roll"] is not None:
+            await self._determine_winner()
+    
+    async def _determine_winner(self):
+        """Determine and announce the winner of a dice duel"""
+        if not self.active_challenge:
+            return
+        
+        my_roll = self.active_challenge["my_roll"]
+        opponent_roll = self.active_challenge["opponent_roll"]
+        opponent = self.active_challenge["opponent"]
+        i_am_challenger = self.active_challenge.get("i_am_challenger", False)
+        
+        # Determine winner
+        if my_roll > opponent_roll:
+            winner = self.username
+            loser = opponent
+            i_won = True
+        elif opponent_roll > my_roll:
+            winner = opponent
+            loser = self.username
+            i_won = False
+        else:
+            winner = None  # Tie
+            i_won = None
+        
+        # Display locally
+        self._print(f"\n  ╔══════════════════════════════════════════╗")
+        self._print(f"  ║           🎲 DUEL RESULTS 🎲              ║")
+        self._print(f"  ╠══════════════════════════════════════════╣")
+        self._print(f"  ║  {self.username:15} rolled: {my_roll:2}            ║")
+        self._print(f"  ║  {opponent:15} rolled: {opponent_roll:2}            ║")
+        self._print(f"  ╠══════════════════════════════════════════╣")
+        
+        if i_won is True:
+            self._print(f"  ║  🏆 YOU WIN! 🏆                          ║")
+        elif i_won is False:
+            self._print(f"  ║  💀 {opponent} wins!                    ║")
+        else:
+            self._print(f"  ║  🤝 It's a TIE!                          ║")
+        
+        self._print(f"  ╚══════════════════════════════════════════╝\n")
+        
+        # Only the challenger broadcasts the final result to avoid duplicates
+        if i_am_challenger and self.client and self.current_room:
+            if winner:
+                result_msg = f"🎲🏆 DUEL RESULT: {winner} defeats {loser}! ({my_roll if i_won else opponent_roll} vs {opponent_roll if i_won else my_roll})"
+            else:
+                result_msg = f"🎲🤝 DUEL RESULT: It's a TIE between {self.username} and {opponent}! (Both rolled {my_roll})"
+            
+            await self.client.send_message(result_msg)
+            
+            t = time.strftime("%H:%M")
+            fingerprint = self.identity.id[:8]
+            ui_print(f"  [{t}] {self.username} [{fingerprint}]: {result_msg}")
+        
+        # Clear active challenge
+        self.active_challenge = None
     
     def _color(self, args: str):
         """Set terminal foreground and background colors, or apply a theme"""
+        global CURSES_UI
+        
         parts = args.lower().split()
         
         if not parts or parts[0] in ('help', '?'):
@@ -3770,7 +6067,10 @@ class PingNostrCLI:
             return
         
         if parts[0] == 'reset':
-            print(reset_terminal_color(), end='', flush=True)
+            if CURSES_UI and CURSES_UI.running:
+                CURSES_UI.apply_theme('default')
+            else:
+                print(reset_terminal_color(), end='', flush=True)
             self._print("  ✓ Colors reset to default")
             return
         
@@ -3785,13 +6085,25 @@ class PingNostrCLI:
         # Check if it's a theme name
         if len(parts) == 1 and parts[0] in THEMES:
             theme = parts[0]
-            if apply_theme(theme):
-                bg, fg = THEMES[theme]
-                if bg and fg:
-                    self._print(f"  ✓ Theme '{theme}' applied (bg={bg}, fg={fg})")
+            if CURSES_UI and CURSES_UI.running:
+                # Apply to curses
+                if CURSES_UI.apply_theme(theme):
+                    bg, fg = THEMES[theme]
+                    if bg and fg:
+                        self._print(f"  ✓ Theme '{theme}' applied (bg={bg}, fg={fg})")
+                    else:
+                        self._print(f"  ✓ Theme '{theme}' applied (reset to default)")
                 else:
-                    self._print(f"  ✓ Theme '{theme}' applied (reset to default)")
-                return
+                    self._print(f"  ✗ Failed to apply theme '{theme}'")
+            else:
+                # Apply to classic terminal
+                if apply_theme(theme):
+                    bg, fg = THEMES[theme]
+                    if bg and fg:
+                        self._print(f"  ✓ Theme '{theme}' applied (bg={bg}, fg={fg})")
+                    else:
+                        self._print(f"  ✓ Theme '{theme}' applied (reset to default)")
+            return
         
         # Parse bg and fg
         bg = None
@@ -3821,12 +6133,18 @@ class PingNostrCLI:
             return
         
         # Apply colors
-        apply_terminal_color(bg, fg)
-        
-        # Show confirmation
-        bg_name = bg or "default"
-        fg_name = fg or "default"
-        self._print(f"  ✓ Color set: bg={bg_name}, fg={fg_name}")
+        if CURSES_UI and CURSES_UI.running:
+            if CURSES_UI.apply_colors(bg, fg):
+                bg_name = bg or "default"
+                fg_name = fg or "default"
+                self._print(f"  ✓ Color set: bg={bg_name}, fg={fg_name}")
+            else:
+                self._print(f"  ✗ Failed to apply colors")
+        else:
+            apply_terminal_color(bg, fg)
+            bg_name = bg or "default"
+            fg_name = fg or "default"
+            self._print(f"  ✓ Color set: bg={bg_name}, fg={fg_name}")
     
     def _color_help(self):
         """Show color command help"""
@@ -3966,7 +6284,7 @@ class PingNostrCLI:
             self._print(f"  Usage: /sound [on|off|test]")
     
     def _toggle_fixed_input(self, args: str):
-        """Toggle fixed input line at bottom of screen"""
+        """Toggle fixed input line at bottom of screen (experimental)"""
         global TERM_UI_ENABLED
         
         args = args.strip().lower()
@@ -3976,29 +6294,59 @@ class PingNostrCLI:
             TERM_UI_ENABLED = not TERM_UI_ENABLED
             if TERM_UI_ENABLED:
                 setup_scroll_region()
-                self._print(f"  ✓ Fixed input: ON (input stays at bottom)")
+                self._print(f"  ✓ Fixed input: ON (experimental - may have glitches)")
             else:
                 reset_scroll_region()
                 self._print(f"  ✗ Fixed input: OFF (classic mode)")
         elif args in ('on', '1', 'yes', 'true'):
             TERM_UI_ENABLED = True
             setup_scroll_region()
-            self._print(f"  ✓ Fixed input: ON")
+            self._print(f"  ✓ Fixed input: ON (experimental)")
         elif args in ('off', '0', 'no', 'false'):
             TERM_UI_ENABLED = False
             reset_scroll_region()
             self._print(f"  ✗ Fixed input: OFF")
         else:
             self._print(f"  Usage: /fixedinput [on|off]")
-            self._print(f"  Keeps your input line at the bottom of the screen")
+            self._print(f"  Experimental: keeps input at bottom (may have display glitches)")
     
-    def _save(self):
-        """Save session, username, and settings to pingconfig.json"""
+    def _save(self, args: str = ""):
+        """Save session, username, and settings to pingconfig.json
+        
+        Usage: /save [withhistory]
+        """
+        include_history = args.lower().strip() in ('withhistory', 'history', 'h')
+        
+        # Gather chat history if requested
+        chat_history = None
+        if include_history:
+            global CURSES_UI
+            if CURSES_UI and CURSES_UI.messages:
+                # Export visible messages from curses UI
+                chat_history = []
+                for msg in CURSES_UI.messages:
+                    chat_history.append({
+                        "line": msg,
+                        "exported_at": time.time() * 1000
+                    })
+            elif self.storage and hasattr(self.storage, 'messages'):
+                # Export from storage if available
+                chat_history = []
+                for msg in self.storage.messages.values():
+                    chat_history.append({
+                        "timestamp": msg.timestamp,
+                        "room": msg.room,
+                        "sender_id": msg.sender_id,
+                        "sender_name": msg.sender_name,
+                        "content": msg.content,
+                    })
+        
         config_path, success = Storage.export_config(
             self.identity, 
             self.username,
             room=self.current_room,
-            room_password=self.initial_password
+            room_password=self.initial_password,
+            chat_history=chat_history
         )
         
         if success:
@@ -4019,6 +6367,8 @@ class PingNostrCLI:
                 lines.append(f"    • Mode:        legacy")
             elif HARDENED_MODE:
                 lines.append(f"    • Mode:        hardened")
+            if include_history and chat_history:
+                lines.append(f"    • History:     {len(chat_history)} lines")
             lines.append(f"\n  Use --load to restore this session")
             lines.append("")
             self._print('\n'.join(lines))
@@ -4233,6 +6583,7 @@ def main():
     parser.add_argument('--legacy', action='store_true', help='Legacy mode (compatible with old clients)')
     parser.add_argument('--hardened', action='store_true', help='Hardened mode (decoys, timing jitter)')
     parser.add_argument('--no-sound', action='store_true', help='Disable sound notifications')
+    parser.add_argument('--classic', action='store_true', help='Use classic terminal mode (no curses UI)')
     parser.add_argument('--update', action='store_true', help='Check for updates and install')
     parser.add_argument('--debug', '-d', action='store_true', help='Show debug output')
     parser.add_argument('--version', '-v', action='version', version=f'Ping {APP_VERSION}')
@@ -4242,7 +6593,13 @@ def main():
     
     # Handle --no-sound flag
     if args.no_sound:
+        global SOUND_ENABLED
         SOUND_ENABLED = False
+    
+    # Handle --classic flag
+    if args.classic:
+        global CURSES_MODE
+        CURSES_MODE = False
     
     # Handle --update flag (run update and exit)
     if args.update:
