@@ -236,7 +236,7 @@ def schnorr_verify(msg: bytes, pubkey: bytes, sig: bytes) -> bool:
 # ==============================================================================
 # Constants
 # ==============================================================================
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.2"
 APP_ID = "ping-e2e-v1"
 DEBUG = False  # Set via --debug flag
 LEGACY_MODE = False  # Legacy mode for old client compatibility (--legacy)
