@@ -7,7 +7,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 public class StoneUseDamage {
     public static final ResourceKey<DamageType> INFINITY_STONE_KEY =
@@ -18,5 +20,13 @@ public class StoneUseDamage {
                 .registryOrThrow(Registries.DAMAGE_TYPE)
                 .getHolderOrThrow(INFINITY_STONE_KEY);
         return new DamageSource(type, entity);
+    }
+
+    public static boolean hurtPlayerWithoutKnockback(Level level, Player player, float amount) {
+        Vec3 motion = player.getDeltaMovement();
+        boolean hurt = player.hurt(get(level, player), amount);
+        player.setDeltaMovement(motion);
+        player.hurtMarked = true;
+        return hurt;
     }
 }

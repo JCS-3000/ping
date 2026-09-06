@@ -47,7 +47,7 @@ public class MetamorphosisRealityStoneAbility implements IGStoneAbility {
 
         // Raw stone cost
         if (!StoneItem.isInGauntlet(player, stack)) {
-            player.hurt(StoneUseDamage.get(level, player), 4.0F);
+            StoneUseDamage.hurtPlayerWithoutKnockback(level, player, 4.0F);
         }
 
         // Cast SFX

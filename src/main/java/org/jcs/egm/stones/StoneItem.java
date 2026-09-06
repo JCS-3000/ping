@@ -2,12 +2,15 @@ package org.jcs.egm.stones;
 
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
+import org.jcs.egm.registry.ModEffects;
 
 /**
  * Base class for all Infinity Stones.
@@ -23,10 +26,18 @@ public abstract class StoneItem extends Item {
     // ---- Location helpers ----
     public static boolean isRawInInventory(Player player, ItemStack stoneStack) {
         if (player == null || stoneStack == null || stoneStack.isEmpty()) return false;
-        for (ItemStack invStack : player.getInventory().items) {
-            if (invStack != stoneStack && StoneContainer.containsStone(invStack, stoneStack)) return false;
+        return stoneStack.getItem() instanceof StoneItem;
+    }
+
+    public static boolean hasRawStone(Player player) {
+        if (player == null) return false;
+        for (ItemStack stack : player.getInventory().items) {
+            if (!stack.isEmpty() && stack.getItem() instanceof StoneItem) return true;
         }
-        return true;
+        for (ItemStack stack : player.getInventory().offhand) {
+            if (!stack.isEmpty() && stack.getItem() instanceof StoneItem) return true;
+        }
+        return false;
     }
 
     public static boolean isInGauntlet(Player player, ItemStack stoneStack) {
@@ -58,11 +69,27 @@ public abstract class StoneItem extends Item {
     @Override
     public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slot, boolean selected) {
         if (!level.isClientSide && entity instanceof Player player) {
-            if (isRawInInventory(player, stack) && level.getGameTime() % 10 == 0 && player.getHealth() > 0.5F) {
-                player.hurt(StoneUseDamage.get(level, player), 1.0F);
+            if (!player.getAbilities().instabuild && isRawInInventory(player, stack)) {
+                if (level.getGameTime() % 20 == 0) {
+                    applyStoneSicknessEffects(player);
+                }
+                if (isHeldBy(player, stack) && level.getGameTime() % 200 == 0 && player.getHealth() > 0.5F) {
+                    StoneUseDamage.hurtPlayerWithoutKnockback(level, player, 1.0F);
+                }
             }
         }
         super.inventoryTick(stack, level, entity, slot, selected);
+    }
+
+    private static boolean isHeldBy(Player player, ItemStack stack) {
+        return player.getMainHandItem() == stack || player.getOffhandItem() == stack;
+    }
+
+    private static void applyStoneSicknessEffects(Player player) {
+        player.addEffect(new MobEffectInstance(ModEffects.STONE_SICKNESS.get(), 40, 0, false, true, true));
+        player.addEffect(new MobEffectInstance(MobEffects.DIG_SPEED, 40, 2, false, false, false));
+        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 40, 2, false, false, false));
+        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 0, false, false, false));
     }
 
     // ---- Use / Hold plumbing ----

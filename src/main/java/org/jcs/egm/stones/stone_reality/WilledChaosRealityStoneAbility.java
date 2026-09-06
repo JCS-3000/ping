@@ -47,7 +47,7 @@ public class WilledChaosRealityStoneAbility implements IGStoneAbility {
         if (!StoneEnergyManager.consumeInstant(player, stack, "reality", abilityKey())) return;
 
         if (!StoneItem.isInGauntlet(player, stack)) {
-            player.hurt(StoneUseDamage.get(level, player), 4.0F);
+            StoneUseDamage.hurtPlayerWithoutKnockback(level, player, 4.0F);
         }
 
         level.playSound(null, player.blockPosition(), BEAM_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F);

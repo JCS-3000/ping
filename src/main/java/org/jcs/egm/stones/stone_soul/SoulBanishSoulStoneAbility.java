@@ -41,7 +41,7 @@ public class SoulBanishSoulStoneAbility implements IGStoneAbility {
 
         if (!StoneEnergyManager.consumeInstant(player, stack, "soul", abilityKey())) return;
 
-        if (!inGauntlet) player.hurt(StoneUseDamage.get(server, player), 4.0F);
+        if (!inGauntlet) StoneUseDamage.hurtPlayerWithoutKnockback(server, player, 4.0F);
 
         server.playSound(null, player.blockPosition(), SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 0.7F, 1.2F);
 

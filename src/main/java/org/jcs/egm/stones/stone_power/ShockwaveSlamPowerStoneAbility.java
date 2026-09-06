@@ -141,7 +141,7 @@ public class ShockwaveSlamPowerStoneAbility implements IGStoneAbility, StoneAbil
     }
 
     private void doSlam(Level level, Player player) {
-        player.hurt(StoneUseDamage.get(level, player), 2.0F);
+        StoneUseDamage.hurtPlayerWithoutKnockback(level, player, 2.0F);
         Vec3 origin = player.position();
         level.playSound(null, player.blockPosition(), POWER_STONE_EXPLOSION, SoundSource.PLAYERS, 1.0F, 1.0F);
 

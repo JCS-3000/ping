@@ -23,9 +23,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingHealEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.jcs.egm.command.SoulRealmCommand;
@@ -36,6 +38,8 @@ import org.jcs.egm.registry.ModEffects;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.StoneAbilityRegistries;
 import org.jcs.egm.stones.StoneAbilityStateCleanup;
+import org.jcs.egm.stones.StoneItem;
+import org.jcs.egm.stones.StoneUseDamage;
 import org.jcs.egm.stones.stone_power.EmpoweredPunchPowerStoneAbility;
 import org.jcs.egm.stones.stone_power.PowerStoneItem;
 
@@ -63,6 +67,32 @@ public class ModEvents {
     public static void onPlayerDeath(LivingDeathEvent event) {
         if (event.getEntity() instanceof Player player) {
             cleanupAbilityState(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        Player player = event.player;
+        if (player.level().isClientSide) return;
+
+        if (!StoneItem.hasRawStone(player)) {
+            player.removeEffect(ModEffects.STONE_SICKNESS.get());
+            return;
+        }
+
+        if (!player.getAbilities().instabuild
+                && player.hasEffect(ModEffects.STONE_SICKNESS.get())
+                && player.level().getGameTime() % 300 == 0
+                && player.getHealth() > 0.5F) {
+            StoneUseDamage.hurtPlayerWithoutKnockback(player.level(), player, 1.0F);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLivingHeal(LivingHealEvent event) {
+        if (event.getEntity() instanceof Player player && player.hasEffect(ModEffects.STONE_SICKNESS.get())) {
+            event.setCanceled(true);
         }
     }
 
